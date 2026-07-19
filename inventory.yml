@@ -1,0 +1,33 @@
+---
+all:
+  hosts:
+    gym-server:
+      ansible_host: 192.168.1.11
+      ansible_user: root
+  vars:
+    git_repo_url: "https://github.com/your-username/gym-website.git"  # Update this
+    git_branch: "main"
+    web_root: "/var/www/html"
+    backup_dir: "/var/backups/website"
+
+    # Gym Tracker Flask app (playbooks/deploy-app.yml)
+    app_dir: "/opt/gymapp"
+    app_user: "gymapp"
+    app_group: "gymapp"
+    app_port: 8099
+    admin_username: "admin"
+    # admin_password: set via `-e admin_password=...` on first deploy.
+    # If omitted and no admin account exists yet, a random password is
+    # generated and printed once at the end of the playbook run.
+
+    # Telegram-based registration (see app/gymapp/registration.py).
+    # The bot (@hybridx_gym_tracker_bot) is operated entirely through a
+    # separate personal helper service (192.168.1.23) that owns the bot
+    # token and long-polls Telegram for message delivery. This app talks
+    # ONLY to that helper's REST API - never to Telegram's Bot API
+    # directly, no bot token here, no webhook, no other Telegram
+    # integration point anywhere in this app (see gymapp/telegram_bot.py +
+    # gymapp/telegram_poller.py). The bot's @username is fetched live from
+    # the helper's /bot/info endpoint, so it never needs configuring here.
+    telegram_helper_api_base: "http://192.168.1.23:5000/api"
+    public_base_url: "https://gym.181094.xyz"

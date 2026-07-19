@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Verify via Telegram - Gym Tracker{% endblock %}
+{% block content %}
+<div class="login-wrap">
+    <div class="card">
+        <h1 style="text-align:center;">✅ Almost there</h1>
+        <p class="subtitle">One more step to finish creating your account</p>
+
+        {% if deep_link %}
+        <a class="btn" href="{{ deep_link }}" style="width:100%; text-decoration:none;">Open Telegram to verify</a>
+        {% else %}
+        <div class="flash flash-error">
+            The Telegram bot isn't configured on this server yet, so we can't
+            build your verification link. Please contact the site admin.
+        </div>
+        {% endif %}
+
+        <ol style="margin-top:20px; color: var(--text-muted); line-height:1.6;">
+            <li>Tap the button above.</li>
+            <li>Tap <strong>Start</strong> in Telegram.</li>
+            <li>We'll send you a link there to set your password.</li>
+        </ol>
+    </div>
+    <p style="text-align:center;">
+        Already have an account? <a href="{{ url_for('member.login') }}">Log in</a>
+    </p>
+</div>
+{% endblock %}

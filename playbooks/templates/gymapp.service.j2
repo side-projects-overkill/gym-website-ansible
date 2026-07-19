@@ -1,0 +1,22 @@
+[Unit]
+Description=Gym Tracker Flask app (gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_dir }}/app
+Environment=GYMAPP_DATA_DIR={{ app_dir }}/data
+Environment="GYMAPP_TELEGRAM_HELPER_API_BASE={{ telegram_helper_api_base }}"
+Environment="GYMAPP_PUBLIC_BASE_URL={{ public_base_url }}"
+Environment="GYMAPP_ENABLE_TELEGRAM_POLLER=1"
+ExecStart=/usr/bin/gunicorn --workers 1 --threads 4 --timeout 60 --bind 127.0.0.1:{{ app_port }} wsgi:application
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths={{ app_dir }}/data
+
+[Install]
+WantedBy=multi-user.target

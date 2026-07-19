@@ -1,0 +1,52 @@
+# Virtual environments
+venv/
+venb/
+env/
+.env/
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+
+# Ansible
+.ansible/
+ansible_retry/
+*.retry
+
+# Reports and logs
+*_report_*.txt
+*_report_*.json
+*_health_*.txt
+*_status_*.txt
+*.log
+
+# Performance and monitoring output
+backup_performance_test/
+monitoring_output/
+performance_results/
+*_performance_*/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-*
+
+# Gym Tracker app runtime data (SQLite db, admin creds, secret key, backups)
+app/data/
+app/.venv/
+app/**/__pycache__/

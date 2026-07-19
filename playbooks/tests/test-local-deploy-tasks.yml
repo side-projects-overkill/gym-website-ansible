@@ -1,0 +1,48 @@
+---
+# Supporting tasks for local deployment testing
+# This file contains reusable tasks for testing local deployment functionality
+
+- name: Check if test file exists
+  stat:
+    path: "{{ test_file }}"
+  register: test_file_check
+
+- name: Fail if test file doesn't exist
+  fail:
+    msg: "Test file {{ test_file }} not found"
+  when: not test_file_check.stat.exists
+
+- name: Create backup directory if needed
+  file:
+    path: "{{ backup_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Create target directory if needed
+  file:
+    path: "{{ target_dir }}"
+    state: directory
+    mode: '0755'
+    owner: apache
+    group: apache
+
+- name: Copy test file to target
+  copy:
+    src: "{{ test_file }}"
+    dest: "{{ target_dir }}/index.html"
+    owner: apache
+    group: apache
+    mode: '0644'
+
+- name: Verify deployment
+  stat:
+    path: "{{ target_dir }}/index.html"
+  register: deploy_verify
+
+- name: Validate deployment succeeded
+  assert:
+    that:
+      - deploy_verify.stat.exists
+      - deploy_verify.stat.pw_name == "apache"
+      - deploy_verify.stat.gr_name == "apache"
+    msg: "Local deployment validation failed"

@@ -1,0 +1,95 @@
+---
+- name: Rollback Gym Website to Previous Backup
+  hosts: gym-server
+  gather_facts: no
+  vars_prompt:
+    - name: backup_file
+      prompt: "Enter backup filename (or 'latest' for most recent)"
+      default: "latest"
+      private: no
+
+  tasks:
+    - name: List available backups
+      find:
+        paths: "{{ backup_dir }}"
+        patterns: "*.tar.gz"
+        file_type: file
+      register: backup_files
+      when: backup_file == "latest"
+
+    - name: Determine latest backup
+      set_fact:
+        selected_backup: "{{ (backup_files.files | sort(attribute='mtime') | last).path }}"
+      when: backup_file == "latest"
+
+    - name: Set specific backup file
+      set_fact:
+        selected_backup: "{{ backup_dir }}/{{ backup_file }}"
+      when: backup_file != "latest"
+
+    - name: Check if backup exists
+      stat:
+        path: "{{ selected_backup }}"
+      register: backup_stat
+
+    - name: Fail if backup doesn't exist
+      fail:
+        msg: "Backup file {{ selected_backup }} not found!"
+      when: not backup_stat.stat.exists
+
+    - name: Display selected backup
+      debug:
+        msg: "Rolling back to: {{ selected_backup }}"
+
+    - name: Stop Apache service
+      systemd:
+        name: httpd
+        state: stopped
+
+    - name: Create current backup before rollback
+      archive:
+        path: "{{ web_root }}"
+        dest: "{{ backup_dir }}/pre-rollback-{{ ansible_date_time.epoch }}.tar.gz"
+        format: gz
+
+    - name: Clear current web root
+      file:
+        path: "{{ web_root }}"
+        state: absent
+
+    - name: Recreate web root directory
+      file:
+        path: "{{ web_root }}"
+        state: directory
+        owner: apache
+        group: apache
+        mode: '0755'
+
+    - name: Extract backup to web root
+      unarchive:
+        src: "{{ selected_backup }}"
+        dest: "/"
+        remote_src: yes
+        owner: apache
+        group: apache
+
+    - name: Start Apache service
+      systemd:
+        name: httpd
+        state: started
+
+    - name: Test website after rollback
+      uri:
+        url: "http://{{ ansible_host }}/"
+        method: GET
+        status_code: 200
+      delegate_to: localhost
+      register: rollback_test
+
+    - name: Display rollback results
+      debug:
+        msg: |
+          Rollback completed successfully!
+          - Restored from: {{ selected_backup }}
+          - Website test: {{ 'PASSED' if rollback_test.status == 200 else 'FAILED' }}
+          - Current backup saved as: pre-rollback-{{ ansible_date_time.epoch }}.tar.gz

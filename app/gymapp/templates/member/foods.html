@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Food Guide - Gym Tracker{% endblock %}
+{% block content %}
+    <h1>High-Volume Food Guide</h1>
+    <p class="subtitle">{{ intro }}</p>
+
+    {% if not categories %}
+    <div class="card">
+        <p class="muted">No foods configured yet. Log in to the admin panel to add some.</p>
+    </div>
+    {% endif %}
+
+    {% for cat in categories %}
+    <div class="day-section">
+        <div class="day-title">{{ cat.name }}</div>
+        <div class="table-wrapper">
+            <table class="responsive-table">
+                <thead>
+                    <tr>
+                        <th>Food</th>
+                        <th>Calories / 100g</th>
+                        <th>Why it helps</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for food in cat.foods %}
+                    <tr>
+                        <td class="exercise-name" data-label="Food">{{ food.name }}</td>
+                        <td data-label="Calories / 100g">{{ food.calories_per_100g }}</td>
+                        <td data-label="Why it helps">{{ food.tip or "" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="footer">
+        <a href="{{ url_for('member.plan') }}">&larr; Back to Workout Plan</a>
+        <div class="credits">
+            <small>Sorted lowest-to-highest calorie density within each category. Edit this list at <code>/foods/edit</code>.</small>
+        </div>
+    </div>
+{% endblock %}

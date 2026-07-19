@@ -1,0 +1,134 @@
+---
+- name: Deploy Gym Website from Git Repository
+  hosts: gym-server
+  gather_facts: yes
+  vars:
+    timestamp: "{{ ansible_date_time.epoch }}"
+
+  tasks:
+    - name: Install required packages
+      dnf:
+        name:
+          - git
+          - rsync
+        state: present
+
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Backup current website
+      archive:
+        path: "{{ web_root }}"
+        dest: "{{ backup_dir }}/website-backup-{{ timestamp }}.tar.gz"
+        format: gz
+      when: backup_current | default(true)
+
+    - name: Create temporary directory for git clone
+      tempfile:
+        state: directory
+        suffix: gym-website
+      register: temp_dir
+
+    - name: Clone website repository
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ temp_dir.path }}"
+        version: "{{ git_branch }}"
+        depth: 1
+        force: yes
+
+    - name: Find HTML files in repository
+      find:
+        paths: "{{ temp_dir.path }}"
+        patterns: "*.html,*.css,*.js,*.png,*.jpg,*.jpeg,*.gif,*.ico"
+        recurse: yes
+      register: website_files
+
+    - name: Display found files
+      debug:
+        msg: "Found {{ website_files.files | length }} files to deploy"
+
+    - name: Stop Apache service temporarily
+      systemd:
+        name: httpd
+        state: stopped
+      when: stop_apache | default(false)
+
+    - name: Sync files to web root
+      synchronize:
+        src: "{{ temp_dir.path }}/"
+        dest: "{{ web_root }}/"
+        delete: yes
+        recursive: yes
+        perms: yes
+        owner: yes
+        group: yes
+        rsync_opts:
+          - "--exclude=.git"
+          - "--exclude=README.md"
+          - "--exclude=.gitignore"
+      delegate_to: "{{ inventory_hostname }}"
+
+    - name: Set proper ownership and permissions
+      file:
+        path: "{{ web_root }}"
+        owner: apache
+        group: apache
+        mode: '0755'
+        recurse: yes
+
+    - name: Ensure HTML files have correct permissions
+      find:
+        paths: "{{ web_root }}"
+        patterns: "*.html,*.css,*.js"
+        recurse: yes
+      register: web_files
+
+    - name: Set file permissions for web content
+      file:
+        path: "{{ item.path }}"
+        mode: '0644'
+      loop: "{{ web_files.files }}"
+
+    - name: Start Apache service
+      systemd:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Verify Apache is running
+      systemd:
+        name: httpd
+        state: started
+      register: apache_status
+
+    - name: Test website accessibility
+      uri:
+        url: "http://{{ ansible_host }}/"
+        method: GET
+        status_code: 200
+      delegate_to: localhost
+      register: website_check
+
+    - name: Cleanup temporary directory
+      file:
+        path: "{{ temp_dir.path }}"
+        state: absent
+
+    - name: Clean up old backups (keep last 5)
+      shell: |
+        cd {{ backup_dir }} && ls -1t website-backup-*.tar.gz | tail -n +6 | xargs rm -f
+      when: cleanup_backups | default(true)
+
+    - name: Display deployment summary
+      debug:
+        msg: |
+          Website deployment completed successfully!
+          - Files deployed from: {{ git_repo_url }} ({{ git_branch }} branch)
+          - Backup created: {{ backup_dir }}/website-backup-{{ timestamp }}.tar.gz
+          - Website URL: http://{{ ansible_host }}/
+          - Apache status: {{ apache_status.status.ActiveState }}
+          - Website test: {{ 'PASSED' if website_check.status == 200 else 'FAILED' }}

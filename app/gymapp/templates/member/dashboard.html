@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Gym Tracker{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<p class="subtitle">Latest logged metrics at a glance</p>
+
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+            <h2 style="margin:0 0 6px;">Progress</h2>
+            <span class="progress-badge {{ progress_result.status }}">{{ progress_result.status.replace('_', ' ') }}</span>
+        </div>
+        {% if checked_in_today %}
+        <span class="muted">✅ Checked in today</span>
+        {% else %}
+        <form method="post" action="{{ url_for('attendance.checkin') }}">
+            <input type="hidden" name="redirect_to" value="dashboard">
+            <button class="btn" type="submit">Check In for Today</button>
+        </form>
+        {% endif %}
+    </div>
+    <p style="margin:12px 0 0;">{{ progress_result.message }}</p>
+    <div class="progress-signals">
+        <div class="progress-signal">
+            <strong>Attendance:</strong> {{ progress_result.attendance_signal.detail }}
+        </div>
+        <div class="progress-signal">
+            <strong>Weight:</strong> {{ progress_result.weight_signal.detail }}
+        </div>
+    </div>
+    <p style="margin:12px 0 0;">
+        <a href="{{ url_for('attendance.attendance') }}">View attendance history</a>
+        &middot;
+        <a href="{{ url_for('goals.goals') }}">Update goals</a>
+    </p>
+</div>
+
+<div class="card-grid">
+    {% for row in latest %}
+    <div class="stat-card">
+        <div class="label">{{ row.label }}</div>
+        {% if row.value is not none %}
+        <div class="value">{{ row.value }} <small>{{ row.unit }}</small></div>
+        <div class="date">as of {{ row.log_date }}</div>
+        {% else %}
+        <div class="value muted">No data yet</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% if weight_def %}
+<div class="card">
+    <h2 style="margin-top:0;">Log Today's Weight</h2>
+    <form method="post" action="{{ url_for('member.tracker_add') }}">
+        <input type="hidden" name="redirect_to" value="dashboard">
+        <input type="hidden" name="metric_key" value="{{ weight_metric }}">
+        <div class="form-row" style="align-items:end;">
+            <div>
+                <label for="log_date">Date</label>
+                <input type="date" id="log_date" name="log_date" value="{{ today }}" required>
+            </div>
+            <div>
+                <label for="value">Weight ({{ weight_def.unit }})</label>
+                <input type="number" step="any" id="value" name="value" autofocus required>
+            </div>
+            <div>
+                <button class="btn" type="submit" style="width:100%;">Log Weight</button>
+            </div>
+        </div>
+    </form>
+    <canvas id="trendChart" class="chart" height="180"></canvas>
+    <p id="chartEmpty" class="muted" style="display:none;">No weight logged yet - add your first entry above.</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2 style="margin-top:0;">Quick Links</h2>
+    <p><a href="{{ url_for('member.plan') }}">🏋️ View your workout plan</a></p>
+    <p><a href="{{ url_for('member.tracker') }}">📈 Full tracker (all metrics, history, export)</a></p>
+    <p><a href="{{ url_for('member.config_editor') }}">✏️ Edit the workout program (YAML)</a></p>
+    <p><a href="{{ url_for('member.foods_editor') }}">🥗 Edit the high-volume food guide</a></p>
+    <p><a href="{{ url_for('member.food_guide') }}">🥗 View the food guide (weight-loss food ideas)</a></p>
+    <p><a href="{{ url_for('member.metrics') }}">⚙️ Manage trackable metric types</a></p>
+    <p><a href="{{ url_for('member.export_logs_csv') }}">⬇️ Export all logs as CSV</a></p>
+    <p><a href="{{ url_for('attendance.attendance') }}">🔥 Track gym attendance</a></p>
+    <p><a href="{{ url_for('goals.goals') }}">🎯 Set your goals</a></p>
+</div>
+
+{% if weight_def %}
+<script src="{{ url_for('static', filename='chart.js') }}"></script>
+<script>
+const trendCanvas = document.getElementById('trendChart');
+const trendEmpty = document.getElementById('chartEmpty');
+if (trendCanvas) {
+    const load = () => loadAndDrawChart('{{ weight_metric }}', trendCanvas, trendEmpty);
+    load();
+    window.addEventListener('resize', load);
+}
+</script>
+{% endif %}
+{% endblock %}

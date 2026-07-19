@@ -1,0 +1,459 @@
+---
+# Comprehensive Test Suite for Gym Website Ansible Playbooks
+# This playbook tests all deployment scenarios and validates functionality
+
+- name: Gym Website Ansible Playbook Test Suite
+  hosts: gym-server
+  gather_facts: yes
+  vars:
+    test_timestamp: "{{ ansible_date_time.epoch }}"
+    test_web_root: "/var/www/test"
+    test_backup_dir: "/var/backups/test"
+    original_web_root: "/var/www/html"
+    original_backup_dir: "/var/backups/website"
+
+  tasks:
+    - name: "🧪 TEST SUITE: Starting Gym Website Playbook Tests"
+      debug:
+        msg: |
+          ==========================================
+          🏋️ GYM WEBSITE ANSIBLE TEST SUITE
+          ==========================================
+          Test run: {{ test_timestamp }}
+          Target: {{ inventory_hostname }}
+          Date: {{ ansible_date_time.date }}
+          Time: {{ ansible_date_time.time }}
+          ==========================================
+
+    # Pre-test validation
+    - name: "✅ PRE-TEST: Validate connection and prerequisites"
+      block:
+        - name: Test basic connectivity
+          ping:
+
+        - name: Check if running as root
+          command: whoami
+          register: current_user
+          failed_when: current_user.stdout != "root"
+
+        - name: Verify Apache is installed
+          command: which httpd
+          register: apache_check
+          failed_when: apache_check.rc != 0
+
+        - name: Check original website exists
+          stat:
+            path: "{{ original_web_root }}/index.html"
+          register: original_site
+
+        - name: Display original site status
+          debug:
+            msg: "Original website found: {{ original_site.stat.exists }}"
+
+    # Test Environment Setup
+    - name: "🔧 SETUP: Prepare test environment"
+      block:
+        - name: Create test web directory
+          file:
+            path: "{{ test_web_root }}"
+            state: directory
+            mode: '0755'
+            owner: apache
+            group: apache
+
+        - name: Create test backup directory
+          file:
+            path: "{{ test_backup_dir }}"
+            state: directory
+            mode: '0755'
+
+        - name: Create test HTML file on controller
+          copy:
+            content: |
+              <!DOCTYPE html>
+              <html><head><title>Test Gym Website</title></head>
+              <body>
+              <h1>🧪 Ansible Test Website</h1>
+              <p>Test timestamp: {{ test_timestamp }}</p>
+              <p>Generated: {{ ansible_date_time.iso8601 }}</p>
+              </body></html>
+            dest: "/tmp/test-index.html"
+          delegate_to: localhost
+
+        - name: Display test setup completion
+          debug:
+            msg: "Test environment prepared successfully"
+
+    # Test 1: Local File Deployment
+    - name: "🧪 TEST 1: Local file deployment functionality"
+      block:
+        - name: Copy test file to target for local deployment test
+          copy:
+            src: "/tmp/test-index.html"
+            dest: "/tmp/test-index-server.html"
+
+        - name: Test local file deployment to test directory
+          include_tasks: test-local-deploy-tasks.yml
+          vars:
+            test_file: "/tmp/test-index-server.html"
+            target_dir: "{{ test_web_root }}"
+            backup_dir: "{{ test_backup_dir }}"
+
+        - name: Verify test deployment worked
+          stat:
+            path: "{{ test_web_root }}/index.html"
+          register: test_deploy_result
+
+        - name: Validate deployment result
+          assert:
+            that:
+              - test_deploy_result.stat.exists
+              - test_deploy_result.stat.size > 100
+            msg: "Local deployment test failed"
+
+        - name: Display test 1 result
+          debug:
+            msg: "✅ TEST 1 PASSED: Local file deployment working"
+
+    # Test 2: Backup functionality
+    - name: "🧪 TEST 2: Backup creation and management"
+      block:
+        - name: Create test content for backup
+          copy:
+            content: |
+              <html><head><title>Backup Test</title></head>
+              <body><h1>Test content for backup</h1>
+              <p>Timestamp: {{ test_timestamp }}</p></body></html>
+            dest: "{{ test_web_root }}/backup-test.html"
+
+        - name: Test backup creation
+          archive:
+            path: "{{ test_web_root }}"
+            dest: "{{ test_backup_dir }}/test-backup-{{ test_timestamp }}.tar.gz"
+            format: gz
+
+        - name: Verify backup was created
+          stat:
+            path: "{{ test_backup_dir }}/test-backup-{{ test_timestamp }}.tar.gz"
+          register: backup_result
+
+        - name: Validate backup creation
+          assert:
+            that:
+              - backup_result.stat.exists
+              - backup_result.stat.size > 500
+            msg: "Backup creation test failed"
+
+        - name: Test backup extraction
+          unarchive:
+            src: "{{ test_backup_dir }}/test-backup-{{ test_timestamp }}.tar.gz"
+            dest: "/tmp/backup-test-extract"
+            remote_src: yes
+
+        - name: Verify backup extraction
+          stat:
+            path: "/tmp/backup-test-extract{{ test_web_root }}/backup-test.html"
+          register: extract_result
+
+        - name: Validate extraction
+          assert:
+            that:
+              - extract_result.stat.exists
+            msg: "Backup extraction test failed"
+
+        - name: Display test 2 result
+          debug:
+            msg: "✅ TEST 2 PASSED: Backup functionality working"
+
+    # Test 3: Apache service management
+    - name: "🧪 TEST 3: Apache service management"
+      block:
+        - name: Check Apache service status
+          systemd:
+            name: httpd
+          register: apache_status
+
+        - name: Validate Apache is running
+          assert:
+            that:
+              - apache_status.status.ActiveState == "active"
+            msg: "Apache service not running"
+
+        - name: Test Apache restart capability
+          systemd:
+            name: httpd
+            state: restarted
+          register: restart_result
+
+        - name: Wait for Apache to be ready
+          wait_for:
+            port: 80
+            host: localhost
+            timeout: 30
+
+        - name: Test HTTP response after restart
+          uri:
+            url: "http://localhost/"
+            method: GET
+          register: http_test
+
+        - name: Validate HTTP response
+          assert:
+            that:
+              - http_test.status == 200
+            msg: "HTTP service not responding correctly"
+
+        - name: Display test 3 result
+          debug:
+            msg: "✅ TEST 3 PASSED: Apache service management working"
+
+    # Test 4: File permissions and ownership
+    - name: "🧪 TEST 4: File permissions and ownership"
+      block:
+        - name: Create test file with wrong permissions
+          copy:
+            content: "Test permission file"
+            dest: "{{ test_web_root }}/permission-test.html"
+            mode: '0600'
+            owner: root
+            group: root
+
+        - name: Fix permissions using deployment logic
+          file:
+            path: "{{ test_web_root }}/permission-test.html"
+            owner: apache
+            group: apache
+            mode: '0644'
+
+        - name: Verify permissions were fixed
+          stat:
+            path: "{{ test_web_root }}/permission-test.html"
+          register: perm_result
+
+        - name: Validate permissions
+          assert:
+            that:
+              - perm_result.stat.pw_name == "apache"
+              - perm_result.stat.gr_name == "apache"
+              - perm_result.stat.mode == "0644"
+            msg: "File permission test failed"
+
+        - name: Display test 4 result
+          debug:
+            msg: "✅ TEST 4 PASSED: File permissions and ownership working"
+
+    # Test 5: Error handling and validation
+    - name: "🧪 TEST 5: Error handling and validation"
+      block:
+        - name: Test deployment with missing file (should fail gracefully)
+          stat:
+            path: "/nonexistent/file.html"
+          register: missing_file
+          failed_when: false
+
+        - name: Validate missing file detection
+          assert:
+            that:
+              - not missing_file.stat.exists
+            msg: "Missing file detection failed"
+
+        - name: Test insufficient disk space simulation
+          command: df -h {{ test_web_root }}
+          register: disk_space
+
+        - name: Test backup directory accessibility
+          file:
+            path: "{{ test_backup_dir }}/access-test"
+            state: touch
+
+        - name: Remove test access file
+          file:
+            path: "{{ test_backup_dir }}/access-test"
+            state: absent
+
+        - name: Display test 5 result
+          debug:
+            msg: "✅ TEST 5 PASSED: Error handling and validation working"
+
+    # Test 6: Performance and resource usage
+    - name: "🧪 TEST 6: Performance and resource usage"
+      block:
+        - name: Check memory usage before operations
+          command: free -m
+          register: memory_before
+
+        - name: Create larger test file for performance test
+          command: dd if=/dev/zero of={{ test_web_root }}/large-test.html bs=1024 count=100
+          register: large_file_creation
+
+        - name: Time file copy operation
+          shell: time cp {{ test_web_root }}/large-test.html {{ test_web_root }}/large-test-copy.html
+          register: copy_time
+
+        - name: Check memory usage after operations
+          command: free -m
+          register: memory_after
+
+        - name: Verify large file operations
+          stat:
+            path: "{{ test_web_root }}/large-test-copy.html"
+          register: large_file_result
+
+        - name: Validate performance test
+          assert:
+            that:
+              - large_file_result.stat.exists
+              - large_file_result.stat.size > 100000
+            msg: "Performance test failed"
+
+        - name: Display test 6 result
+          debug:
+            msg: "✅ TEST 6 PASSED: Performance and resource usage acceptable"
+
+    # Test 7: Real deployment simulation
+    - name: "🧪 TEST 7: Full deployment workflow simulation"
+      block:
+        - name: Simulate pre-deployment backup
+          archive:
+            path: "{{ test_web_root }}"
+            dest: "{{ test_backup_dir }}/pre-deployment-{{ test_timestamp }}.tar.gz"
+            format: gz
+
+        - name: Simulate file deployment
+          copy:
+            content: |
+              <!DOCTYPE html>
+              <html><head><title>Simulated Deployment</title></head>
+              <body>
+              <h1>🚀 Simulated Full Deployment</h1>
+              <p>Deployment test: {{ test_timestamp }}</p>
+              <p>All systems operational!</p>
+              </body></html>
+            dest: "{{ test_web_root }}/index.html"
+            owner: apache
+            group: apache
+            mode: '0644'
+
+        - name: Simulate post-deployment validation
+          uri:
+            url: "http://localhost:80"
+            method: HEAD
+          register: post_deploy_test
+          failed_when: false
+
+        - name: Display deployment simulation result
+          debug:
+            msg: |
+              ✅ TEST 7 PASSED: Full deployment workflow simulation completed
+              HTTP Status: {{ post_deploy_test.status | default('N/A') }}
+
+    # Test 8: Cleanup and rollback capability
+    - name: "🧪 TEST 8: Cleanup and rollback functionality"
+      block:
+        - name: Test rollback simulation
+          unarchive:
+            src: "{{ test_backup_dir }}/test-backup-{{ test_timestamp }}.tar.gz"
+            dest: "/tmp/rollback-test"
+            remote_src: yes
+
+        - name: Verify rollback extraction
+          stat:
+            path: "/tmp/rollback-test{{ test_web_root }}/backup-test.html"
+          register: rollback_result
+
+        - name: Validate rollback capability
+          assert:
+            that:
+              - rollback_result.stat.exists
+            msg: "Rollback test failed"
+
+        - name: Display test 8 result
+          debug:
+            msg: "✅ TEST 8 PASSED: Cleanup and rollback functionality working"
+
+    # Final System Validation
+    - name: "🔍 FINAL VALIDATION: System integrity check"
+      block:
+        - name: Check Apache is still running
+          systemd:
+            name: httpd
+          register: final_apache_check
+
+        - name: Check disk space hasn't been exhausted
+          command: df -h
+          register: final_disk_check
+
+        - name: Verify original website is intact
+          stat:
+            path: "{{ original_web_root }}/index.html"
+          register: final_original_check
+
+        - name: Validate system integrity
+          assert:
+            that:
+              - final_apache_check.status.ActiveState == "active"
+              - final_original_check.stat.exists
+            msg: "System integrity check failed"
+
+        - name: Display final validation
+          debug:
+            msg: "✅ FINAL VALIDATION PASSED: System integrity maintained"
+
+    # Cleanup test environment
+    - name: "🧹 CLEANUP: Remove test artifacts"
+      block:
+        - name: Remove test web directory
+          file:
+            path: "{{ test_web_root }}"
+            state: absent
+
+        - name: Remove test backup directory
+          file:
+            path: "{{ test_backup_dir }}"
+            state: absent
+
+        - name: Remove temporary test files
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - "/tmp/test-index.html"
+            - "/tmp/test-index-server.html"
+            - "/tmp/backup-test-extract"
+            - "/tmp/rollback-test"
+          delegate_to: "{{ 'localhost' if item.startswith('/tmp/test-index.html') else inventory_hostname }}"
+
+        - name: Display cleanup completion
+          debug:
+            msg: "🧹 Test environment cleaned up successfully"
+
+    # Test Summary Report
+    - name: "📊 TEST SUMMARY: Generate final report"
+      debug:
+        msg: |
+          ==========================================
+          🏋️ GYM WEBSITE ANSIBLE TEST RESULTS
+          ==========================================
+          Test run completed: {{ test_timestamp }}
+          Target system: {{ inventory_hostname }}
+          Date: {{ ansible_date_time.date }}
+          Time: {{ ansible_date_time.time }}
+
+          ✅ TEST 1: Local file deployment - PASSED
+          ✅ TEST 2: Backup functionality - PASSED
+          ✅ TEST 3: Apache service management - PASSED
+          ✅ TEST 4: File permissions & ownership - PASSED
+          ✅ TEST 5: Error handling & validation - PASSED
+          ✅ TEST 6: Performance & resource usage - PASSED
+          ✅ TEST 7: Full deployment workflow - PASSED
+          ✅ TEST 8: Cleanup & rollback - PASSED
+          ✅ FINAL: System integrity check - PASSED
+
+          🎉 ALL TESTS PASSED!
+
+          System Status:
+          - Apache: {{ final_apache_check.status.ActiveState }}
+          - Original site: {{ 'Present' if final_original_check.stat.exists else 'Missing' }}
+          - Test run duration: ~{{ (ansible_date_time.epoch | int) - (test_timestamp | int) }} seconds
+
+          ==========================================

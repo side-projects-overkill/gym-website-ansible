@@ -1,0 +1,56 @@
+---
+- name: Deploy Gym Tracker SPA as Main Website
+  hosts: gym-server
+  become: yes
+  gather_facts: yes
+  vars:
+    timestamp: "{{ ansible_date_time.epoch }}"
+    local_html_file: "website/gym-tracker.html"
+
+  tasks:
+    - name: Check if local gym tracker file exists
+      stat:
+        path: "{{ local_html_file }}"
+      register: local_file
+      delegate_to: localhost
+      become: false
+
+    - name: Fail if local gym tracker file doesn't exist
+      fail:
+        msg: "{{ local_html_file }} not found in current directory!"
+      when: not local_file.stat.exists
+
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Backup current index.html
+      copy:
+        src: "{{ web_root }}/index.html"
+        dest: "{{ backup_dir }}/index-backup-{{ timestamp }}.html"
+        remote_src: yes
+      ignore_errors: yes
+
+    - name: Deploy gym tracker as main website
+      copy:
+        src: "{{ local_html_file }}"
+        dest: "{{ web_root }}/index.html"
+        owner: apache
+        group: apache
+        mode: '0644'
+      notify: restart apache
+
+    - name: Verify deployment
+      uri:
+        url: "http://{{ ansible_host }}/"
+        method: GET
+        status_code: 200
+      delegate_to: localhost
+
+  handlers:
+    - name: restart apache
+      service:
+        name: httpd
+        state: restarted

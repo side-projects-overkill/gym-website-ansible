@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Food Guide Config - Gym Tracker{% endblock %}
+{% block content %}
+<h1>Food Guide Config</h1>
+<p class="subtitle">Edit the high-volume food list shown on the public Food Guide page. Saving validates the YAML first.</p>
+
+<div class="card">
+    <form method="post">
+        <textarea name="raw_yaml" rows="28" spellcheck="false">{{ raw_yaml }}</textarea>
+        <div class="btn-group">
+            <button class="btn" type="submit">Save Food Guide</button>
+            <a class="btn btn-secondary" href="{{ url_for('member.export_foods') }}">Download .yml</a>
+            <a class="btn btn-secondary" href="{{ url_for('member.food_backups') }}">View Backups</a>
+            <a class="btn btn-secondary" href="{{ url_for('member.food_guide') }}">View Food Guide</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0;">Format Reference</h2>
+    <pre class="muted" style="white-space:pre-wrap; font-size:0.8rem;">intro: >
+  Optional intro text shown at the top of the page.
+
+categories:
+  - name: "Vegetables"
+    foods:
+      - name: "Cucumber"
+        calories_per_100g: 15
+        tip: "Optional note on why it's useful for volume eating."</pre>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+---
+- name: Backup Current Website
+  hosts: gym-server
+  gather_facts: yes
+  vars:
+    timestamp: "{{ ansible_date_time.epoch }}"
+
+  tasks:
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create backup of current website
+      archive:
+        path: "{{ web_root }}"
+        dest: "{{ backup_dir }}/manual-backup-{{ timestamp }}.tar.gz"
+        format: gz
+
+    - name: Display backup location
+      debug:
+        msg: "Backup created: {{ backup_dir }}/manual-backup-{{ timestamp }}.tar.gz"

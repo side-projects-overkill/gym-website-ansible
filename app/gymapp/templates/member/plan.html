@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ site.title }}{% endblock %}
+{% block content %}
+    <h1>{{ site.title }}</h1>
+    {% if site.subtitle %}<p class="subtitle">{{ site.subtitle }}</p>{% endif %}
+
+    {% if not days %}
+    <div class="card">
+        <p class="muted">No workout days configured yet. Log in to the admin panel to add your program.</p>
+    </div>
+    {% endif %}
+
+    {% for day in days %}
+    <div class="day-section">
+        <div class="day-title">{{ day.name }}</div>
+        <div class="table-wrapper">
+            <table class="responsive-table">
+                <thead>
+                    <tr>
+                        <th>Exercise</th>
+                        <th>Sets x Reps</th>
+                        <th>Rest</th>
+                        <th>Form Focus</th>
+                        {% if day.exercises and day.exercises|selectattr('video_query', 'defined')|list %}
+                        <th>Video</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ex in day.exercises %}
+                    <tr>
+                        <td class="exercise-name" data-label="Exercise">{{ ex.name }}</td>
+                        <td data-label="Sets x Reps">{{ ex.sets_reps or "-" }}</td>
+                        <td data-label="Rest">{{ ex.rest or "-" }}</td>
+                        <td data-label="Form Focus">{{ ex.form_focus or "" }}</td>
+                        {% if ex.video_query %}
+                        <td data-label="Video"><a href="{{ ex.video_query|youtube_search_url }}" target="_blank" rel="noopener" class="btn btn-sm">View</a></td>
+                        {% elif day.exercises|selectattr('video_query', 'defined')|list %}
+                        <td data-label="Video">-</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="footer">
+        <a href="{{ url_for('member.config_editor') }}">✏️ Edit this plan</a>
+        <div class="credits">
+            <small>Powered by Flask + SQLite &bull; Deployed with Ansible</small>
+        </div>
+    </div>
+{% endblock %}

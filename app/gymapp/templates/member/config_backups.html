@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Config Backups - Gym Tracker{% endblock %}
+{% block content %}
+<h1>Workout Config Backups</h1>
+<p class="subtitle">A backup is created automatically every time you save the config. The last {{ files|length }} are kept.</p>
+
+<div class="card">
+    {% if not files %}
+    <p class="muted">No backups yet.</p>
+    {% else %}
+    <div class="table-wrapper">
+        <table class="responsive-table">
+            <thead><tr><th>File</th><th></th></tr></thead>
+            <tbody>
+                {% for f in files %}
+                <tr>
+                    <td data-label="File">{{ f }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('member.restore_backup', filename=f) }}" style="display:inline;" onsubmit="return confirm('Restore this backup? Your current config will be backed up first.');">
+                            <button class="btn btn-sm" type="submit">Restore</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<p><a href="{{ url_for('member.config_editor') }}">&larr; Back to editor</a></p>
+{% endblock %}

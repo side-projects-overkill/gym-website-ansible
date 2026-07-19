@@ -1,0 +1,98 @@
+# Gym Tracker workout configuration
+#
+# Edit this in the admin panel (/admin/config) to change what shows up on the
+# public site. "days" is a list of workout days, each with a list of
+# exercises. Every exercise field is plain text so you can describe things
+# however you like.
+site:
+  title: "Joint-First Execution Guide"
+  subtitle: "5-Day Split - Custom Modded for Maximum Joint Safety"
+
+days:
+  - name: "Day 1: Chest & Shoulders"
+    exercises:
+      - name: "Flat DB Bench Press"
+        sets_reps: "3 x 8-12"
+        rest: "90s"
+        form_focus: "Keep elbows tucked at 45 degrees. Drive through the chest."
+        video_query: "flat dumbbell bench press proper form"
+      - name: "High-Incline DB Press (60°)"
+        sets_reps: "3 x 8-12"
+        rest: "90s"
+        form_focus: "Hits front delts. Don't go perfectly vertical to protect capsule."
+      - name: "Pec Deck Fly"
+        sets_reps: "3 x 10-15"
+        rest: "60s"
+        form_focus: "Keep slight bend in elbows. Squeeze chest hard at center."
+      - name: "DB Lateral Raise"
+        sets_reps: "3 x 10-15"
+        rest: "60s"
+        form_focus: "Lead with elbows, stay in the scapular plane."
+
+  - name: "Day 2: Legs"
+    exercises:
+      - name: "Supported Reverse Lunge"
+        sets_reps: "3 x 10/leg"
+        rest: "90s"
+        form_focus: "Hold a rack for balance. Step backward to protect knees."
+      - name: "Seated Leg Curls"
+        sets_reps: "3 x 10-15"
+        rest: "60s"
+        form_focus: "Lock torso into the chair. Deeper stretch, zero back pain."
+      - name: "DB Glute Bridge"
+        sets_reps: "3 x 10-15"
+        rest: "60s"
+        form_focus: "DB across hips. Easy solo setup. Don't over-arch back."
+      - name: "Hanging Knee Raises"
+        sets_reps: "3 x 10-15"
+        rest: "60s"
+        form_focus: "Hang from bar, pull knees up. Decompresses lumbar spine."
+
+  - name: "Day 3: Back"
+    exercises:
+      - name: "Half-Kneeling Cable Row"
+        sets_reps: "3 x 8-12/arm"
+        rest: "90s"
+        form_focus: "One knee on the floor locks your pelvis. Impossible to cheat with lower back."
+      - name: "Lat Pulldown"
+        sets_reps: "3 x 10-15"
+        rest: "90s"
+        form_focus: "Pull to upper chest, drive elbows down and back."
+      - name: "DB Shrugs"
+        sets_reps: "3 x 12-15"
+        rest: "60s"
+        form_focus: "Pull shoulders straight up toward ears, control descent."
+      - name: "Pallof Press"
+        sets_reps: "3 x 10/side"
+        rest: "60s"
+        form_focus: "Anti-rotation core work. Resist the cable twisting your spine."
+
+  - name: "Day 4: Arms"
+    exercises:
+      - name: "Incline DB Curl"
+        sets_reps: "3 x 10-12"
+        rest: "60s"
+        form_focus: "Sit on incline bench, let arms hang down for deep stretch."
+      - name: "Cable Ext. Rotation"
+        sets_reps: "3 x 15-20"
+        rest: "60s"
+        form_focus: "Elbow pinned at side, rotate forearm outward only."
+      - name: "Reverse Curls"
+        sets_reps: "3 x 12-15"
+        rest: "45s"
+        form_focus: "Control the negative. Targets forearms and grip strength."
+
+  - name: "Day 5: Full Body / Core"
+    exercises:
+      - name: "Cable Pull-Through"
+        sets_reps: "3 x 12"
+        rest: "90s"
+        form_focus: "Hinge at hips, drive through glutes, keep spine neutral."
+      - name: "Seated Leg Curls"
+        sets_reps: "3 x 10-15"
+        rest: "60s"
+        form_focus: "Lock torso into the chair. Deeper stretch, zero back pain."
+      - name: "Pallof Press"
+        sets_reps: "3 x 10/side"
+        rest: "60s"
+        form_focus: "Anti-rotation core work. Resist the cable twisting your spine."

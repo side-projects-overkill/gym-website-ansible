@@ -1,0 +1,8 @@
+---
+# Quick Deploy Gym Website (No Backup)
+# Wraps deploy-website.yml with backup/cleanup disabled for fast iteration.
+- import_playbook: deploy-website.yml
+  vars:
+    backup_current: false
+    stop_apache: false
+    cleanup_backups: false

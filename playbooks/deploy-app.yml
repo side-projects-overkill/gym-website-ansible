@@ -1,0 +1,173 @@
+---
+# Deploy the Gym Tracker Flask + SQLite app and put Apache in front of it as
+# a reverse proxy. Safe to re-run: application data (SQLite DB, per-user
+# workout/food config) lives under {{ app_dir }}/data and is never touched
+# by the code sync, so redeploys only update code.
+- name: Deploy Gym Tracker application
+  hosts: gym-server
+  gather_facts: yes
+  vars:
+    local_app_dir: "{{ playbook_dir }}/../app"
+
+  tasks:
+    - name: Install system packages for the app
+      dnf:
+        name:
+          - python3-flask
+          - python3-pyyaml
+          - python3-gunicorn
+          - python3-requests
+          - rsync
+        state: present
+
+    - name: Create dedicated system group for the app
+      group:
+        name: "{{ app_group }}"
+        system: yes
+        state: present
+
+    - name: Create dedicated system user for the app
+      user:
+        name: "{{ app_user }}"
+        group: "{{ app_group }}"
+        system: yes
+        create_home: no
+        shell: /sbin/nologin
+        home: "{{ app_dir }}"
+        state: present
+
+    - name: Create application directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0750'
+      loop:
+        - "{{ app_dir }}"
+        - "{{ app_dir }}/app"
+        - "{{ app_dir }}/data"
+        - "{{ app_dir }}/data/backups"
+
+    - name: Sync application code to the server
+      synchronize:
+        src: "{{ local_app_dir }}/"
+        dest: "{{ app_dir }}/app/"
+        recursive: yes
+        delete: yes
+        rsync_opts:
+          - "--exclude=data"
+          - "--exclude=.venv"
+          - "--exclude=__pycache__"
+          - "--exclude=*.pyc"
+      notify: restart gymapp
+
+    - name: Set ownership of application code
+      file:
+        path: "{{ app_dir }}/app"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        recurse: yes
+
+    - name: Run one-time migration to the multi-user schema (idempotent)
+      command: "/usr/bin/python3 manage.py --data-dir {{ app_dir }}/data migrate"
+      args:
+        chdir: "{{ app_dir }}/app"
+      register: migrate_result
+      changed_when: "'Already migrated' not in migrate_result.stdout"
+
+    - name: Ensure the data directory is owned by the app user
+      file:
+        path: "{{ app_dir }}/data"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        recurse: yes
+
+    - name: Install systemd unit for the app
+      template:
+        src: templates/gymapp.service.j2
+        dest: /etc/systemd/system/gymapp.service
+        mode: '0644'
+      notify:
+        - reload systemd
+        - restart gymapp
+
+    - name: Ensure gymapp service is enabled and running
+      systemd:
+        name: gymapp
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Install Apache reverse-proxy config for the app
+      template:
+        src: templates/gymapp-httpd.conf.j2
+        dest: /etc/httpd/conf.d/gymapp.conf
+        mode: '0644'
+      notify: restart httpd
+
+    - name: Ensure Apache is enabled and running
+      systemd:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Apply any pending service restarts before verifying
+      meta: flush_handlers
+
+    - name: Wait for the app to accept connections locally
+      wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port }}"
+        timeout: 30
+
+    - name: Verify the public site responds through Apache
+      uri:
+        url: "http://{{ ansible_host }}/"
+        method: GET
+        status_code: 200
+      delegate_to: localhost
+      register: site_check
+
+    - name: Verify the login page responds through Apache
+      uri:
+        url: "http://{{ ansible_host }}/login"
+        method: GET
+        status_code: 200
+      delegate_to: localhost
+      register: login_check
+
+    - name: Verify the app server can reach the Telegram helper API
+      uri:
+        url: "{{ telegram_helper_api_base }}/bot/info"
+        method: GET
+        status_code: 200
+      register: telegram_helper_check
+      ignore_errors: yes
+      when: telegram_helper_api_base is defined and telegram_helper_api_base | length > 0
+
+    - name: Deployment summary
+      debug:
+        msg:
+          - "Gym Tracker deployed successfully."
+          - "Public site:  http://{{ ansible_host }}/ ({{ site_check.status }})"
+          - "Login page:   http://{{ ansible_host }}/login ({{ login_check.status }})"
+          - "App data dir: {{ app_dir }}/data (SQLite db, per-user workout/food YAML - back this up / move it to migrate)"
+          - "Telegram helper API reachable: {{ telegram_helper_check.status | default('skipped') }}"
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: restart gymapp
+      systemd:
+        name: gymapp
+        state: restarted
+
+    - name: restart httpd
+      systemd:
+        name: httpd
+        state: restarted

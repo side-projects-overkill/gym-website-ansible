@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Invalid Link - Gym Tracker{% endblock %}
+{% block content %}
+<div class="login-wrap">
+    <div class="card">
+        <h1 style="text-align:center;">⚠️ Link Invalid or Expired</h1>
+        <p class="subtitle">This link is no longer valid. It may have already been used, or it expired.</p>
+        <div class="btn-group" style="justify-content:center;">
+            <a class="btn" href="{{ url_for('registration.register') }}">Register again</a>
+            <a class="btn btn-secondary" href="{{ url_for('registration.forgot_password') }}">Forgot password</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

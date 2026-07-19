@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Tracker Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .tab-active {
+            background: #1e293b;
+            border-color: #3b82f6;
+        }
+        .exercise-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+        .set-logged {
+            background: #065f46;
+            border-color: #10b981;
+        }
+        .golden-rule {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            color: #0f172a;
+        }
+        .nutrition-card {
+            background: #1e293b;
+            border-left: 4px solid #3b82f6;
+        }
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        .btn-complete {
+            background: #10b981;
+            border-color: #10b981;
+        }
+        .btn-complete:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Golden Rules Banner -->
+    <div class="golden-rule p-3 text-center font-bold text-sm mb-4">
+        🏸 Badminton Veto: No leg days on court days | 🛡️ Joint Guard: Stop at technical failure, no grinding
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex border-b border-gray-700 mb-6">
+        <button id="workout-tab" class="tab-active flex-1 py-3 px-4 text-center border-b-2 font-medium">
+            💪 Workout
+        </button>
+        <button id="nutrition-tab" class="flex-1 py-3 px-4 text-center border-b-2 border-transparent font-medium">
+            🥗 Nutrition
+        </button>
+        <button id="history-tab" class="flex-1 py-3 px-4 text-center border-b-2 border-transparent font-medium">
+            📊 History
+        </button>
+    </div>
+
+    <!-- Workout Tab -->
+    <div id="workout-section" class="container mx-auto px-4">
+        <!-- Day Selector -->
+        <div class="mb-6">
+            <h2 class="text-xl font-bold mb-3">Select Workout Day</h2>
+            <div class="grid grid-cols-5 gap-2">
+                <button class="day-btn py-3 px-2 rounded border text-sm font-medium" data-day="Monday">Mon</button>
+                <button class="day-btn py-3 px-2 rounded border text-sm font-medium" data-day="Tuesday">Tue</button>
+                <button class="day-btn py-3 px-2 rounded border text-sm font-medium" data-day="Wednesday">Wed</button>
+                <button class="day-btn py-3 px-2 rounded border text-sm font-medium" data-day="Thursday">Thu</button>
+                <button class="day-btn py-3 px-2 rounded border text-sm font-medium" data-day="Friday">Fri</button>
+            </div>
+        </div>
+
+        <!-- Workout Content -->
+        <div id="workout-content" class="space-y-4"></div>
+
+        <!-- Complete Workout Button -->
+        <div id="complete-section" class="hidden mt-6">
+            <button id="complete-workout" class="btn-complete w-full py-4 text-white font-bold rounded-lg text-lg">
+                ✅ Complete Workout
+            </button>
+        </div>
+    </div>
+
+    <!-- Nutrition Tab -->
+    <div id="nutrition-section" class="container mx-auto px-4 hidden">
+        <h2 class="text-2xl font-bold mb-6">🥗 High-Volume Nutrition Guide</h2>
+
+        <!-- Pub Protocol -->
+        <div class="nutrition-card p-4 rounded-lg mb-6">
+            <h3 class="text-lg font-bold mb-3">🍺 The Pub Protocol</h3>
+            <ul class="space-y-2 text-sm">
+                <li>✅ <strong>Order:</strong> Tandoori chicken, grilled fish, dal, vegetables</li>
+                <li>❌ <strong>Skip:</strong> Deep-fried items, butter naan, heavy curries</li>
+                <li>💧 <strong>1:1 Rule:</strong> One glass water per beer</li>
+                <li>🕐 <strong>Timing:</strong> Eat protein first, save alcohol for last</li>
+            </ul>
+        </div>
+
+        <!-- High-Volume Staples -->
+        <div class="nutrition-card p-4 rounded-lg mb-6">
+            <h3 class="text-lg font-bold mb-3">🥤 High-Volume Staples</h3>
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-semibold text-blue-400">The Protein + Isabgol Shake</h4>
+                    <p class="text-sm text-gray-300">30g whey + 1 tbsp psyllium husk + 300ml water. Maximum satiety, gut health.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-blue-400">Massive Salads</h4>
+                    <p class="text-sm text-gray-300">Cucumber, tomato, onion, lettuce + lemon + chat masala. Fills stomach, minimal calories.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-blue-400">Crunchy Backup</h4>
+                    <p class="text-sm text-gray-300">Carrot sticks, cucumber slices, radish. High water content, satisfying crunch.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hydration -->
+        <div class="nutrition-card p-4 rounded-lg mb-6">
+            <h3 class="text-lg font-bold mb-3">💧 Monsoon Hydration Protocol</h3>
+            <ul class="space-y-2 text-sm">
+                <li>⚡ <strong>Pre-workout:</strong> 500ml water + pinch salt + lemon squeeze</li>
+                <li>🏋️ <strong>During workout:</strong> Sip salted water every 15 mins</li>
+                <li>🌧️ <strong>Humidity protection:</strong> Protects synovial joint fluid</li>
+                <li>🧂 <strong>Post-workout:</strong> Coconut water or nimbu paani</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- History Tab -->
+    <div id="history-section" class="container mx-auto px-4 hidden">
+        <h2 class="text-2xl font-bold mb-6">📊 Workout History</h2>
+        <div id="history-content" class="space-y-4"></div>
+    </div>
+
+    <script>
+        // Workout data
+        const workoutData = {
+            "Monday": {
+                focus: "Push • Chest, Shoulders, Triceps",
+                exercises: [
+                    { name: "Flat DB Bench Press", sets_reps: "3 x 8-12", rest: "90s", focus: "Keep elbows tucked at 45 degrees. Drive through the chest." },
+                    { name: "Incline DB Press", sets_reps: "3 x 8-12", rest: "90s", focus: "Low incline (15-30°). Control the descent. Tucked elbows." },
+                    { name: "Pec Deck Fly", sets_reps: "3 x 10-15", rest: "90s", focus: "Keep slight bend in elbows. Squeeze chest hard at center." },
+                    { name: "High-Incline DB Press (60°)", sets_reps: "3 x 8-12", rest: "90s", focus: "Hits front delts. Don't go perfectly vertical to protect capsule." },
+                    { name: "DB Lateral Raise", sets_reps: "4 x 12-15", rest: "60s", focus: "Lift slightly in front of your body (scapular plane)." },
+                    { name: "Tricep Pushdown", sets_reps: "3 x 10-15", rest: "60s", focus: "Keep posture upright, shoulders locked down and back." }
+                ]
+            },
+            "Tuesday": {
+                focus: "Lower A • Quad Focus & Knee Resilience",
+                exercises: [
+                    { name: "Goblet Squat", sets_reps: "3 x 10-12", rest: "120s", focus: "DB at chest forces an upright torso & protects lumbar spine." },
+                    { name: "Leg Extensions", sets_reps: "3 x 12-15", rest: "90s", focus: "Controlled squeeze at top. Do not kick or use momentum." },
+                    { name: "Supported Reverse Lunge", sets_reps: "3 x 10/leg", rest: "90s", focus: "Hold a rack for balance. Step backward to protect knees. Zero back strain." },
+                    { name: "Heavy Slow Calf Raise", sets_reps: "3 x 10-12", rest: "60s", focus: "3s down, 1s pause at bottom stretch for Achilles health." },
+                    { name: "Hanging Knee Raises", sets_reps: "3 x 10-15", rest: "60s", focus: "Hang from bar, pull knees up. Decompresses lumbar spine." }
+                ]
+            },
+            "Wednesday": {
+                focus: "Pull • Back & Biceps",
+                exercises: [
+                    { name: "Half-Kneeling Cable Row", sets_reps: "3 x 8-12/arm", rest: "90s", focus: "One knee on the floor locks your pelvis. Impossible to cheat with lower back." },
+                    { name: "Lat Pulldown", sets_reps: "3 x 10-15", rest: "90s", focus: "Neutral grip (palms facing). Pull strictly to collarbone." },
+                    { name: "Seated Cable Row", sets_reps: "3 x 10-15", rest: "90s", focus: "Sit perfectly tall. Do not let weight pull you forward." },
+                    { name: "DB Shrugs", sets_reps: "3 x 12-15", rest: "60s", focus: "Pull shoulders straight up toward ears, control descent." },
+                    { name: "Incline DB Curl", sets_reps: "3 x 10-12", rest: "60s", focus: "Sit on incline bench, let arms hang down for deep stretch." },
+                    { name: "Hammer Curls", sets_reps: "3 x 10-15", rest: "60s", focus: "Elbows pinned to your sides. No swinging the torso." }
+                ]
+            },
+            "Thursday": {
+                focus: "Lower B • Hamstrings, Glutes & Core",
+                exercises: [
+                    { name: "Lying Leg Curls", sets_reps: "3 x 10-15", rest: "90s", focus: "Keep hips pressed flat into the pad. Do NOT arch lower back." },
+                    { name: "DB Glute Bridge", sets_reps: "3 x 10-15", rest: "90s", focus: "DB across hips. Easy solo setup. Don't over-arch back." },
+                    { name: "Side Plank", sets_reps: "3 x 30s/side", rest: "60s", focus: "Hips up, body in a perfectly straight line." },
+                    { name: "Pallof Press", sets_reps: "3 x 10/side", rest: "60s", focus: "Anti-rotation core work. Resist the cable twisting your spine." }
+                ]
+            },
+            "Friday": {
+                focus: "Accessory • Prehab, Arms & Core",
+                exercises: [
+                    { name: "Face Pulls", sets_reps: "3 x 15-20", rest: "60s", focus: "Squeeze shoulder blades. Crucial for rotator cuff." },
+                    { name: "Cable Ext. Rotation", sets_reps: "3 x 15-20", rest: "60s", focus: "Keep elbow pinned to side. Light weight, high control." },
+                    { name: "Overhead Tricep Ext.", sets_reps: "3 x 10-15", rest: "60s", focus: "Use a cable rope. Keep core braced so ribs don't flare." },
+                    { name: "Bird Dog", sets_reps: "3 x 8/side", rest: "60s", focus: "CRITICAL: Keep spine perfectly neutral. No sagging." }
+                ]
+            }
+        };
+
+        let currentDay = null;
+        let currentWorkoutData = {};
+
+        // Tab switching
+        document.getElementById('workout-tab').onclick = () => showTab('workout');
+        document.getElementById('nutrition-tab').onclick = () => showTab('nutrition');
+        document.getElementById('history-tab').onclick = () => showTab('history');
+
+        function showTab(tab) {
+            // Reset tab styles
+            document.querySelectorAll('button[id$="-tab"]').forEach(t => {
+                t.classList.remove('tab-active');
+                t.classList.add('border-transparent');
+            });
+
+            // Hide all sections
+            document.getElementById('workout-section').classList.add('hidden');
+            document.getElementById('nutrition-section').classList.add('hidden');
+            document.getElementById('history-section').classList.add('hidden');
+
+            // Show selected tab
+            document.getElementById(tab + '-tab').classList.add('tab-active');
+            document.getElementById(tab + '-tab').classList.remove('border-transparent');
+            document.getElementById(tab + '-section').classList.remove('hidden');
+
+            if (tab === 'history') {
+                loadHistory();
+            }
+        }
+
+        // Day selection
+        document.querySelectorAll('.day-btn').forEach(btn => {
+            btn.onclick = () => selectDay(btn.dataset.day);
+        });
+
+        function selectDay(day) {
+            currentDay = day;
+
+            // Update day button styles
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('border-gray-600', 'text-gray-300');
+            });
+
+            document.querySelector(`[data-day="${day}"]`).classList.add('btn-primary');
+            document.querySelector(`[data-day="${day}"]`).classList.remove('border-gray-600', 'text-gray-300');
+
+            // Load workout for the day
+            loadWorkout(day);
+        }
+
+        function loadWorkout(day) {
+            const workout = workoutData[day];
+            const content = document.getElementById('workout-content');
+
+            // Initialize workout data for this session
+            currentWorkoutData = {
+                day: day,
+                date: new Date().toISOString().split('T')[0],
+                exercises: {}
+            };
+
+            content.innerHTML = `
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold">${day} - ${workout.focus}</h3>
+                </div>
+                ${workout.exercises.map((exercise, exerciseIndex) => {
+                    const setCount = parseInt(exercise.sets_reps.split(' x ')[0]);
+                    currentWorkoutData.exercises[exercise.name] = { sets: [] };
+
+                    return `
+                        <div class="exercise-card p-4 rounded-lg">
+                            <div class="mb-3">
+                                <h4 class="font-bold text-lg">${exercise.name}</h4>
+                                <p class="text-blue-400">${exercise.sets_reps} • Rest: ${exercise.rest}</p>
+                                <p class="text-sm text-gray-400 mt-1">${exercise.focus}</p>
+                            </div>
+                            <div class="space-y-2">
+                                ${Array.from({length: setCount}, (_, setIndex) => `
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-8 text-center font-bold">${setIndex + 1}</span>
+                                        <input type="number"
+                                               placeholder="Weight"
+                                               class="flex-1 p-2 bg-gray-700 border border-gray-600 rounded text-center"
+                                               id="weight-${exerciseIndex}-${setIndex}">
+                                        <span class="text-gray-400">kg</span>
+                                        <input type="number"
+                                               placeholder="Reps"
+                                               class="flex-1 p-2 bg-gray-700 border border-gray-600 rounded text-center"
+                                               id="reps-${exerciseIndex}-${setIndex}">
+                                        <span class="text-gray-400">reps</span>
+                                        <button onclick="logSet(${exerciseIndex}, ${setIndex}, '${exercise.name}')"
+                                                class="px-3 py-2 bg-blue-600 text-white rounded font-bold">
+                                            ✓
+                                        </button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+
+            document.getElementById('complete-section').classList.remove('hidden');
+        }
+
+        function logSet(exerciseIndex, setIndex, exerciseName) {
+            const weightInput = document.getElementById(`weight-${exerciseIndex}-${setIndex}`);
+            const repsInput = document.getElementById(`reps-${exerciseIndex}-${setIndex}`);
+
+            const weight = parseFloat(weightInput.value);
+            const reps = parseInt(repsInput.value);
+
+            if (!weight || !reps) {
+                alert('Please enter both weight and reps');
+                return;
+            }
+
+            // Store the set data
+            currentWorkoutData.exercises[exerciseName].sets[setIndex] = { weight, reps };
+
+            // Visual feedback
+            const setRow = weightInput.parentElement;
+            setRow.classList.add('set-logged');
+            weightInput.disabled = true;
+            repsInput.disabled = true;
+
+            // Update button
+            const button = setRow.querySelector('button');
+            button.textContent = '✅';
+            button.disabled = true;
+            button.classList.add('opacity-50');
+        }
+
+        // Complete workout
+        document.getElementById('complete-workout').onclick = () => {
+            const completedSets = Object.values(currentWorkoutData.exercises)
+                .reduce((total, exercise) => total + exercise.sets.filter(set => set).length, 0);
+
+            if (completedSets === 0) {
+                alert('Log at least one set before completing workout');
+                return;
+            }
+
+            // Save to localStorage
+            const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            history.push({
+                ...currentWorkoutData,
+                completedAt: new Date().toISOString(),
+                totalSets: completedSets
+            });
+            localStorage.setItem('workoutHistory', JSON.stringify(history));
+
+            alert(`Workout completed! ${completedSets} sets logged.`);
+
+            // Reset for next workout
+            currentWorkoutData = {};
+            document.getElementById('workout-content').innerHTML = '<p class="text-center text-gray-400 py-8">Select a day to start your workout</p>';
+            document.getElementById('complete-section').classList.add('hidden');
+
+            // Reset day selection
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('border-gray-600', 'text-gray-300');
+            });
+        };
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            const content = document.getElementById('history-content');
+
+            if (history.length === 0) {
+                content.innerHTML = '<p class="text-center text-gray-400 py-8">No workout history yet. Complete your first workout!</p>';
+                return;
+            }
+
+            content.innerHTML = history.slice(-10).reverse().map(workout => `
+                <div class="exercise-card p-4 rounded-lg">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold">${workout.day} - ${new Date(workout.completedAt).toLocaleDateString()}</h3>
+                            <p class="text-sm text-gray-400">${workout.totalSets} sets completed</p>
+                        </div>
+                        <span class="text-green-400 font-bold">✅</span>
+                    </div>
+                    <div class="text-sm text-gray-300">
+                        ${Object.entries(workout.exercises).map(([name, data]) => {
+                            const completedSets = data.sets.filter(set => set).length;
+                            if (completedSets === 0) return '';
+                            const bestSet = data.sets.filter(set => set).reduce((best, set) =>
+                                (set.weight * set.reps) > (best.weight * best.reps) ? set : best
+                            );
+                            return `<div>${name}: ${completedSets} sets (best: ${bestSet.weight}kg x ${bestSet.reps})</div>`;
+                        }).filter(Boolean).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize with today's workout suggestion
+        const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+        if (workoutData[today]) {
+            selectDay(today);
+        }
+    </script>
+</body>
+</html>

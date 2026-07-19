@@ -1,0 +1,455 @@
+---
+- name: Performance and Scalability Testing Suite
+  hosts: gym-server
+  gather_facts: yes
+  vars:
+    website_url: "http://{{ ansible_host }}"
+    test_results_dir: "/tmp/performance_tests"
+    concurrent_users: [1, 5, 10, 25, 50, 100]
+    test_duration: "60s"
+    backup_performance_dir: "/var/backups/performance_tests"
+
+  tasks:
+    - name: Create test results directory
+      file:
+        path: "{{ test_results_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create performance backup directory
+      file:
+        path: "{{ backup_performance_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Install performance testing tools
+      dnf:
+        name:
+          - httpd-tools  # Apache bench (ab)
+          - curl
+          - wget
+          - iotop
+          - htop
+          - nload
+          - iftop
+          - sysstat
+          - stress
+          - siege
+        state: present
+
+    - name: Create performance monitoring script
+      copy:
+        dest: /usr/local/bin/monitor_performance.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          # Performance monitoring script
+
+          MONITOR_DIR="/tmp/performance_monitor"
+          mkdir -p "$MONITOR_DIR"
+
+          echo "Starting performance monitoring..."
+
+          # System stats
+          iostat -x 1 > "$MONITOR_DIR/iostat.log" &
+          IOSTAT_PID=$!
+
+          # Memory usage
+          free -m -s 1 > "$MONITOR_DIR/memory.log" &
+          MEM_PID=$!
+
+          # CPU usage
+          top -b -d 1 > "$MONITOR_DIR/cpu.log" &
+          TOP_PID=$!
+
+          # Network stats
+          netstat -i 1 > "$MONITOR_DIR/network.log" &
+          NET_PID=$!
+
+          # Apache stats
+          while true; do
+            curl -s "http://localhost/server-status?auto" >> "$MONITOR_DIR/apache_status.log"
+            echo "---$(date)---" >> "$MONITOR_DIR/apache_status.log"
+            sleep 1
+          done &
+          APACHE_PID=$!
+
+          echo "Monitoring PIDs: iostat=$IOSTAT_PID mem=$MEM_PID top=$TOP_PID net=$NET_PID apache=$APACHE_PID"
+          echo "$IOSTAT_PID $MEM_PID $TOP_PID $NET_PID $APACHE_PID" > "$MONITOR_DIR/pids.txt"
+
+    - name: Create stop monitoring script
+      copy:
+        dest: /usr/local/bin/stop_performance_monitoring.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          MONITOR_DIR="/tmp/performance_monitor"
+
+          if [ -f "$MONITOR_DIR/pids.txt" ]; then
+            echo "Stopping performance monitoring..."
+            PIDS=$(cat "$MONITOR_DIR/pids.txt")
+            for pid in $PIDS; do
+              kill $pid 2>/dev/null || true
+            done
+            rm -f "$MONITOR_DIR/pids.txt"
+            echo "Performance monitoring stopped"
+          else
+            echo "No monitoring processes found"
+          fi
+
+    - name: Enable Apache server-status module
+      lineinfile:
+        path: /etc/httpd/conf/httpd.conf
+        line: |
+          <Location "/server-status">
+              SetHandler server-status
+              Require local
+          </Location>
+          <Location "/server-info">
+              SetHandler server-info
+              Require local
+          </Location>
+        state: present
+      notify: restart apache
+
+    - name: Create load testing script
+      copy:
+        dest: /usr/local/bin/run_load_tests.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+
+          WEBSITE_URL="${1:-http://localhost}"
+          RESULTS_DIR="${2:-/tmp/performance_tests}"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          TEST_DIR="$RESULTS_DIR/load_test_$TIMESTAMP"
+
+          mkdir -p "$TEST_DIR"
+
+          echo "Starting load tests for $WEBSITE_URL"
+          echo "Results will be saved to $TEST_DIR"
+
+          # Test configurations
+          CONCURRENT_USERS=(1 5 10 25 50 100)
+          REQUESTS_PER_USER=100
+          DURATION="60s"
+
+          # Start monitoring
+          /usr/local/bin/monitor_performance.sh
+          sleep 2
+
+          for users in "${CONCURRENT_USERS[@]}"; do
+            echo "Testing with $users concurrent users..."
+
+            # Apache Bench test
+            ab -n $((users * REQUESTS_PER_USER)) -c $users "$WEBSITE_URL/" > "$TEST_DIR/ab_${users}users.txt" 2>&1
+
+            # Siege test
+            siege -c $users -t $DURATION "$WEBSITE_URL/" > "$TEST_DIR/siege_${users}users.txt" 2>&1
+
+            # Wait between tests
+            sleep 10
+          done
+
+          # Stop monitoring
+          /usr/local/bin/stop_performance_monitoring.sh
+
+          # Copy monitoring data
+          cp -r /tmp/performance_monitor "$TEST_DIR/"
+
+          echo "Load tests completed. Results in $TEST_DIR"
+
+  handlers:
+    - name: restart apache
+      systemd:
+        name: httpd
+        state: restarted
+
+- name: Backup and Storage Performance Tests
+  hosts: gym-server
+  gather_facts: yes
+  vars:
+    backup_test_dir: "/tmp/backup_performance"
+
+  tasks:
+    - name: Create backup performance test directory
+      file:
+        path: "{{ backup_test_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create backup performance test script
+      copy:
+        dest: /usr/local/bin/test_backup_performance.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+
+          BACKUP_DIR="/var/backups/website"
+          WEB_ROOT="/var/www/html"
+          TEST_DIR="/tmp/backup_performance"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+          echo "Starting backup performance tests..."
+
+          # Test backup speed
+          echo "Testing backup creation speed..."
+          start_time=$(date +%s.%N)
+          tar -czf "$TEST_DIR/backup_test_$TIMESTAMP.tar.gz" "$WEB_ROOT"
+          end_time=$(date +%s.%N)
+
+          backup_time=$(echo "$end_time - $start_time" | bc)
+          backup_size=$(du -h "$TEST_DIR/backup_test_$TIMESTAMP.tar.gz" | cut -f1)
+
+          echo "Backup created in $backup_time seconds"
+          echo "Backup size: $backup_size"
+
+          # Test restore speed
+          echo "Testing restore speed..."
+          mkdir -p "$TEST_DIR/restore_test"
+          start_time=$(date +%s.%N)
+          tar -xzf "$TEST_DIR/backup_test_$TIMESTAMP.tar.gz" -C "$TEST_DIR/restore_test"
+          end_time=$(date +%s.%N)
+
+          restore_time=$(echo "$end_time - $start_time" | bc)
+          echo "Restore completed in $restore_time seconds"
+
+          # Disk I/O test
+          echo "Testing disk I/O performance..."
+          dd if=/dev/zero of="$TEST_DIR/io_test.tmp" bs=1M count=100 2>&1 | grep -E "(copied|MB/s)"
+          rm -f "$TEST_DIR/io_test.tmp"
+
+          # Cleanup
+          rm -rf "$TEST_DIR/restore_test"
+          rm -f "$TEST_DIR/backup_test_$TIMESTAMP.tar.gz"
+
+          echo "Backup performance tests completed"
+
+    - name: Create storage stress test script
+      copy:
+        dest: /usr/local/bin/test_storage_stress.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+
+          TEST_DIR="/tmp/storage_stress"
+          mkdir -p "$TEST_DIR"
+
+          echo "Starting storage stress test..."
+
+          # Create multiple files simultaneously
+          for i in {1..10}; do
+            {
+              dd if=/dev/zero of="$TEST_DIR/stress_file_$i.tmp" bs=1M count=50 2>/dev/null
+              sync
+            } &
+          done
+
+          wait
+
+          echo "Storage stress test completed"
+          du -sh "$TEST_DIR"
+
+          # Cleanup
+          rm -rf "$TEST_DIR"
+
+- name: Network and Media Streaming Tests
+  hosts: gym-server
+  gather_facts: yes
+  vars:
+    media_test_dir: "/tmp/media_tests"
+
+  tasks:
+    - name: Create media test directory
+      file:
+        path: "{{ media_test_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create network throughput test script
+      copy:
+        dest: /usr/local/bin/test_network_performance.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+
+          echo "Starting network performance tests..."
+
+          # Test download speed with different file sizes
+          WEBSITE_URL="${1:-http://localhost}"
+          TEST_DIR="/tmp/network_tests"
+          mkdir -p "$TEST_DIR"
+
+          # Create test files of different sizes on server
+          for size in 1 5 10 50; do
+            dd if=/dev/zero of="/var/www/html/test_${size}MB.bin" bs=1M count=$size 2>/dev/null
+          done
+
+          # Test concurrent downloads
+          echo "Testing concurrent downloads..."
+          for concurrent in 1 5 10; do
+            echo "Testing $concurrent concurrent downloads..."
+
+            start_time=$(date +%s.%N)
+            for i in $(seq 1 $concurrent); do
+              {
+                curl -s -o "$TEST_DIR/download_${concurrent}_${i}.bin" "$WEBSITE_URL/test_10MB.bin"
+              } &
+            done
+            wait
+            end_time=$(date +%s.%N)
+
+            download_time=$(echo "$end_time - $start_time" | bc)
+            echo "$concurrent concurrent downloads completed in $download_time seconds"
+
+            # Cleanup downloaded files
+            rm -f "$TEST_DIR"/download_${concurrent}_*.bin
+          done
+
+          # Cleanup test files from server
+          rm -f /var/www/html/test_*MB.bin
+
+          echo "Network performance tests completed"
+
+- name: Container Resource Limits Testing
+  hosts: gym-server
+  gather_facts: yes
+
+  tasks:
+    - name: Create resource limits test script
+      copy:
+        dest: /usr/local/bin/test_resource_limits.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+
+          echo "Starting container resource limits testing..."
+
+          # Check current resource limits
+          echo "=== Current Resource Limits ==="
+          ulimit -a
+
+          # Check memory limits
+          echo "=== Memory Information ==="
+          free -h
+          cat /proc/meminfo | grep -E "(MemTotal|MemAvailable|MemFree)"
+
+          # Check CPU limits
+          echo "=== CPU Information ==="
+          nproc
+          lscpu | grep -E "(CPU\(s\)|Model name|MHz)"
+
+          # Check disk limits
+          echo "=== Disk Space ==="
+          df -h
+
+          # Test memory stress
+          echo "=== Testing Memory Stress ==="
+          stress --vm 1 --vm-bytes 128M --timeout 30s &
+          STRESS_PID=$!
+
+          # Monitor during stress test
+          for i in {1..30}; do
+            echo "Memory usage at ${i}s:"
+            free -m | grep Mem
+            sleep 1
+          done
+
+          wait $STRESS_PID
+          echo "Memory stress test completed"
+
+- name: Generate Performance Report
+  hosts: gym-server
+  gather_facts: yes
+
+  tasks:
+    - name: Create performance report generator
+      copy:
+        dest: /usr/local/bin/generate_performance_report.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+
+          REPORT_FILE="/tmp/performance_baseline_$(date +%Y%m%d_%H%M%S).txt"
+
+          echo "=== GYM WEBSITE PERFORMANCE BASELINE REPORT ===" > "$REPORT_FILE"
+          echo "Generated: $(date)" >> "$REPORT_FILE"
+          echo "Host: $(hostname)" >> "$REPORT_FILE"
+          echo "Target: {{ ansible_host }}" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+
+          echo "=== SYSTEM SPECIFICATIONS ===" >> "$REPORT_FILE"
+          echo "OS: $(cat /etc/redhat-release)" >> "$REPORT_FILE"
+          echo "Kernel: $(uname -r)" >> "$REPORT_FILE"
+          echo "CPU: $(lscpu | grep 'Model name' | cut -d':' -f2 | xargs)" >> "$REPORT_FILE"
+          echo "Memory: $(free -h | grep Mem | awk '{print $2}')" >> "$REPORT_FILE"
+          echo "Disk: $(df -h / | tail -1 | awk '{print $2}')" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+
+          echo "=== APACHE CONFIGURATION ===" >> "$REPORT_FILE"
+          echo "Version: $(httpd -v | head -1)" >> "$REPORT_FILE"
+          echo "Modules: $(httpd -M 2>/dev/null | wc -l) loaded" >> "$REPORT_FILE"
+          echo "MaxRequestWorkers: $(grep -i maxrequestworkers /etc/httpd/conf/*.conf | head -1 || echo 'Default')" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+
+          echo "=== PERFORMANCE RECOMMENDATIONS ===" >> "$REPORT_FILE"
+
+          # CPU-based recommendations
+          CPU_CORES=$(nproc)
+          echo "CPU Cores: $CPU_CORES" >> "$REPORT_FILE"
+          echo "Recommended MaxRequestWorkers: $((CPU_CORES * 25))" >> "$REPORT_FILE"
+
+          # Memory-based recommendations
+          MEMORY_MB=$(free -m | grep Mem | awk '{print $2}')
+          echo "Available Memory: ${MEMORY_MB}MB" >> "$REPORT_FILE"
+          echo "Recommended Apache memory limit: $((MEMORY_MB / 4))MB" >> "$REPORT_FILE"
+
+          # Load testing recommendations
+          echo "" >> "$REPORT_FILE"
+          echo "=== SCALING RECOMMENDATIONS ===" >> "$REPORT_FILE"
+          echo "- Test with concurrent users: 1, 5, 10, 25, 50, 100" >> "$REPORT_FILE"
+          echo "- Monitor response times under load" >> "$REPORT_FILE"
+          echo "- Set up resource monitoring" >> "$REPORT_FILE"
+          echo "- Configure automated backups" >> "$REPORT_FILE"
+          echo "- Implement health checks" >> "$REPORT_FILE"
+
+          echo "" >> "$REPORT_FILE"
+          echo "Report saved to: $REPORT_FILE"
+          echo "$REPORT_FILE"
+
+    - name: Create comprehensive test runner
+      copy:
+        dest: /usr/local/bin/run_all_performance_tests.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+
+          WEBSITE_URL="${1:-http://localhost}"
+          echo "Starting comprehensive performance testing for $WEBSITE_URL"
+
+          # Run all tests in sequence
+          echo "1. Running load tests..."
+          /usr/local/bin/run_load_tests.sh "$WEBSITE_URL"
+
+          echo "2. Running backup performance tests..."
+          /usr/local/bin/test_backup_performance.sh
+
+          echo "3. Running storage stress tests..."
+          /usr/local/bin/test_storage_stress.sh
+
+          echo "4. Running network performance tests..."
+          /usr/local/bin/test_network_performance.sh "$WEBSITE_URL"
+
+          echo "5. Running resource limits tests..."
+          /usr/local/bin/test_resource_limits.sh
+
+          echo "6. Generating performance report..."
+          REPORT_FILE=$(/usr/local/bin/generate_performance_report.sh)
+
+          echo ""
+          echo "=== COMPREHENSIVE PERFORMANCE TESTING COMPLETED ==="
+          echo "Performance report: $REPORT_FILE"
+          echo ""
+          echo "Test results available in:"
+          echo "- /tmp/performance_tests/"
+          echo "- $REPORT_FILE"

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Gym Tracker - Track Your Training{% endblock %}
+{% block content %}
+<section class="hero">
+    <h1 class="hero-title">Track your training.<br>See your progress.</h1>
+    <p class="hero-subtitle">
+        Your workout plans, a high-volume food guide, body metrics, and gym
+        attendance streaks - all in one place. Built for people who take
+        their training seriously.
+    </p>
+    <div class="btn-group hero-actions">
+        <a class="btn btn-lg" href="{{ url_for('registration.register') }}">Create Account</a>
+        <a class="btn btn-secondary btn-lg" href="{{ url_for('member.login') }}">Sign In</a>
+    </div>
+</section>
+
+<section class="feature-grid">
+    <div class="feature-card">
+        <div class="feature-icon">🏋️</div>
+        <h3>Personalized Workout Plans</h3>
+        <p>Write and edit your own training program as simple YAML, then follow
+            it day by day with a clean, distraction-free plan view.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🥗</div>
+        <h3>High-Volume Food Guide</h3>
+        <p>A curated list of filling, low-calorie foods to help you cut weight
+            without feeling like you're starving.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Body Metric Tracking</h3>
+        <p>Log your weight and any custom metrics you care about, then watch
+            your trends unfold on interactive charts.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🔥</div>
+        <h3>Attendance &amp; Streaks</h3>
+        <p>Keep the momentum going - track gym attendance streaks and see your
+            progress status at a glance.</p>
+    </div>
+</section>
+
+<div class="footer">
+    <h2 style="margin-top:0;">Ready to start tracking?</h2>
+    <p class="muted" style="margin-bottom:16px;">Create your free account in seconds - no email required.</p>
+    <a href="{{ url_for('registration.register') }}">Create Account</a>
+</div>
+{% endblock %}

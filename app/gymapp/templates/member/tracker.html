@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Tracker - Gym Tracker{% endblock %}
+{% block content %}
+<h1>Body & Progress Tracker</h1>
+<p class="subtitle">Log height, weight, or any custom metric over time.</p>
+
+<div class="card">
+    <h2 style="margin-top:0;">Log a New Entry</h2>
+    <form method="post" action="{{ url_for('member.tracker_add') }}">
+        <div class="form-row">
+            <div>
+                <label for="log_date">Date</label>
+                <input type="date" id="log_date" name="log_date" value="{{ today }}" required>
+            </div>
+            <div>
+                <label for="metric_key">Metric</label>
+                <select id="metric_key" name="metric_key" required>
+                    {% for d in defs %}
+                    <option value="{{ d.metric_key }}">{{ d.label }} ({{ d.unit }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="value">Value</label>
+                <input type="number" step="any" id="value" name="value" required>
+            </div>
+        </div>
+        <label for="notes">Notes (optional)</label>
+        <input type="text" id="notes" name="notes" placeholder="e.g. morning, fasted">
+        <button class="btn" type="submit">Log Entry</button>
+    </form>
+    {% if not defs %}
+    <p class="muted">No metric types yet &mdash; add one on the <a href="{{ url_for('member.metrics') }}">Metrics</a> page first.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0;">Trend</h2>
+    <div class="form-row" style="align-items:end;">
+        <div>
+            <label for="chart_metric">Metric</label>
+            <select id="chart_metric">
+                {% for d in defs %}
+                <option value="{{ d.metric_key }}">{{ d.label }} ({{ d.unit }})</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <canvas id="trendChart" class="chart" height="220"></canvas>
+    <p id="chartEmpty" class="muted" style="display:none;">No data logged for this metric yet.</p>
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0;">History</h2>
+    <form method="get" style="margin-bottom:12px;">
+        <div class="form-row" style="align-items:end;">
+            <div>
+                <label for="metric">Filter by metric</label>
+                <select id="metric" name="metric" onchange="this.form.submit()">
+                    <option value="">All metrics</option>
+                    {% for d in defs %}
+                    <option value="{{ d.metric_key }}" {% if metric_filter == d.metric_key %}selected{% endif %}>{{ d.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <a class="btn btn-secondary" href="{{ url_for('member.export_logs_csv') }}">Export CSV</a>
+            </div>
+        </div>
+    </form>
+    <div class="table-wrapper">
+        <table class="responsive-table">
+            <thead>
+                <tr><th>Date</th><th>Metric</th><th>Value</th><th>Notes</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for row in logs %}
+                <tr>
+                    <td data-label="Date">{{ row.log_date }}</td>
+                    <td data-label="Metric">{{ row.label }}</td>
+                    <td data-label="Value">{{ row.value }} {{ row.unit }}</td>
+                    <td data-label="Notes">{{ row.notes }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('member.tracker_delete', log_id=row.id) }}" onsubmit="return confirm('Delete this entry?');" style="display:inline;">
+                            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="muted">No entries yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='chart.js') }}"></script>
+<script>
+const trendCanvas = document.getElementById('trendChart');
+const trendEmpty = document.getElementById('chartEmpty');
+const select = document.getElementById('chart_metric');
+if (select && trendCanvas) {
+    const load = () => loadAndDrawChart(select.value, trendCanvas, trendEmpty);
+    select.addEventListener('change', load);
+    if (select.value) load();
+    window.addEventListener('resize', load);
+}
+</script>
+{% endblock %}

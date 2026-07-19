@@ -1,0 +1,122 @@
+# High-volume food guide configuration.
+#
+# Edit this in the admin panel (/admin/foods) to change what shows up on the
+# public Food Guide page. Foods are sorted by calories_per_100g within each
+# category automatically, lowest (most "volume") first.
+intro: >
+  High-volume, low-calorie-density foods let you eat a satisfying amount of
+  food while keeping calories in check - the easiest lever for losing weight
+  without feeling hungry all the time. Build meals around the top of each
+  list, and use them to bulk up smaller portions of calorie-dense foods.
+
+categories:
+  - name: "Vegetables"
+    foods:
+      - name: "Cucumber"
+        calories_per_100g: 15
+        tip: "95% water. Great for bulking out salads for almost no calories."
+      - name: "Lettuce / Leafy Greens"
+        calories_per_100g: 15
+        tip: "Base of any big salad. Barely registers on calories."
+      - name: "Celery"
+        calories_per_100g: 16
+        tip: "Good crunchy snack, especially with a small amount of dip."
+      - name: "Zucchini"
+        calories_per_100g: 17
+        tip: "Spiralize into 'zoodles' to swap for pasta and cut calories drastically."
+      - name: "Tomato"
+        calories_per_100g: 18
+        tip: "Adds volume and flavor to almost any dish."
+      - name: "Mushrooms"
+        calories_per_100g: 22
+        tip: "Meaty texture - great for bulking out ground meat dishes."
+      - name: "Bell Peppers"
+        calories_per_100g: 31
+        tip: "Sweet, filling, and high in vitamin C."
+      - name: "Cauliflower"
+        calories_per_100g: 25
+        tip: "Rice or mash it as a low-calorie stand-in for grains/potatoes."
+      - name: "Broccoli"
+        calories_per_100g: 34
+        tip: "High fiber and volume; steams or roasts well."
+      - name: "Carrots"
+        calories_per_100g: 41
+        tip: "Sweet and filling; good raw for snacking."
+
+  - name: "Fruits"
+    foods:
+      - name: "Watermelon"
+        calories_per_100g: 30
+        tip: "Extremely high water content. Very hard to overeat calories."
+      - name: "Strawberries"
+        calories_per_100g: 32
+        tip: "Sweet, low-calorie dessert substitute."
+      - name: "Cantaloupe"
+        calories_per_100g: 34
+        tip: "Filling and sweet for very few calories."
+      - name: "Grapefruit"
+        calories_per_100g: 42
+        tip: "Classic diet fruit - filling, tart, low calorie."
+      - name: "Orange"
+        calories_per_100g: 47
+        tip: "High fiber compared to drinking the juice."
+      - name: "Apple"
+        calories_per_100g: 52
+        tip: "Fiber + water make it very filling per calorie; eat the skin."
+
+  - name: "Lean Proteins"
+    foods:
+      - name: "Egg Whites"
+        calories_per_100g: 52
+        tip: "Almost pure protein, very low calorie - good for bulking omelets."
+      - name: "Cottage Cheese (low-fat)"
+        calories_per_100g: 72
+        tip: "High protein and very filling; pairs well with fruit."
+      - name: "Greek Yogurt (non-fat)"
+        calories_per_100g: 59
+        tip: "High protein, very satiating, great with berries."
+      - name: "White Fish (cod/tilapia)"
+        calories_per_100g: 90
+        tip: "Very lean protein; large portions for the calories."
+      - name: "Chicken Breast (skinless)"
+        calories_per_100g: 120
+        tip: "Gold standard lean protein for volume + muscle retention while cutting."
+      - name: "Tofu (firm)"
+        calories_per_100g: 76
+        tip: "Absorbs flavor well; a big filling portion for few calories."
+      - name: "Lentils (cooked)"
+        calories_per_100g: 116
+        tip: "High fiber + protein combo is extremely filling."
+      - name: "Black Beans (cooked)"
+        calories_per_100g: 132
+        tip: "Great bulk added to rice/tacos for fiber and protein."
+
+  - name: "Soups & Broths"
+    foods:
+      - name: "Vegetable Broth"
+        calories_per_100g: 5
+        tip: "Drink before a meal to reduce total calories eaten."
+      - name: "Chicken Broth"
+        calories_per_100g: 8
+        tip: "Warm and filling starter; almost no calories."
+      - name: "Vegetable Soup (broth-based)"
+        calories_per_100g: 35
+        tip: "Bulks up a meal with very little calorie cost - eat a big bowl."
+      - name: "Minestrone"
+        calories_per_100g: 55
+        tip: "Beans + veg make this filling; watch portion if it's cream-based."
+
+  - name: "Whole Grains & Starches (in moderation)"
+    foods:
+      - name: "Air-Popped Popcorn"
+        calories_per_100g: 387
+        tip: "Sounds high, but a 100g serving is HUGE (about 33 cups) - very filling per bite."
+      - name: "Boiled Potato"
+        calories_per_100g: 87
+        tip: "One of the most satiating foods gram-for-gram; skip the butter/oil."
+      - name: "Oats (cooked in water)"
+        calories_per_100g: 71
+        tip: "Swells with water, very filling breakfast for the calories."
+      - name: "Brown Rice (cooked)"
+        calories_per_100g: 123
+        tip: "More fiber than white rice for similar volume."

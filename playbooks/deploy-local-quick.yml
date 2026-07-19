@@ -1,0 +1,6 @@
+---
+# Quick Local Deploy (No Backup)
+# Wraps deploy-local.yml with backup disabled for fast iteration.
+- import_playbook: deploy-local.yml
+  vars:
+    backup_local: false

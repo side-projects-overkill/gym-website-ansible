@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Metrics - Gym Tracker{% endblock %}
+{% block content %}
+<h1>Trackable Metrics</h1>
+<p class="subtitle">Define whatever you want to track &mdash; weight, height, waist, mood, anything.</p>
+
+<div class="card">
+    <h2 style="margin-top:0;">Add / Update a Metric</h2>
+    <form method="post" action="{{ url_for('member.metrics_add') }}">
+        <div class="form-row">
+            <div>
+                <label for="metric_key">Key</label>
+                <input type="text" id="metric_key" name="metric_key" placeholder="e.g. neck_cm" pattern="[a-z][a-z0-9_]{1,31}" required>
+            </div>
+            <div>
+                <label for="label">Label</label>
+                <input type="text" id="label" name="label" placeholder="e.g. Neck" required>
+            </div>
+            <div>
+                <label for="unit">Unit</label>
+                <input type="text" id="unit" name="unit" placeholder="e.g. cm">
+            </div>
+            <div>
+                <label for="sort_order">Sort order</label>
+                <input type="number" id="sort_order" name="sort_order" value="0">
+            </div>
+        </div>
+        <button class="btn" type="submit">Save Metric</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0;">Existing Metrics</h2>
+    <div class="table-wrapper">
+        <table class="responsive-table">
+            <thead><tr><th>Key</th><th>Label</th><th>Unit</th><th>Order</th><th></th></tr></thead>
+            <tbody>
+                {% for d in defs %}
+                <tr>
+                    <td data-label="Key"><code>{{ d.metric_key }}</code></td>
+                    <td data-label="Label">{{ d.label }}</td>
+                    <td data-label="Unit">{{ d.unit }}</td>
+                    <td data-label="Order">{{ d.sort_order }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('member.metrics_delete', metric_key=d.metric_key) }}" onsubmit="return confirm('Delete this metric AND all logged history for it?');" style="display:inline;">
+                            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

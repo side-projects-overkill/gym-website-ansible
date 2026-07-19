@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Attendance - Gym Tracker{% endblock %}
+{% block content %}
+<h1>Attendance</h1>
+<p class="subtitle">Check in every time you hit the gym and watch your streak grow.</p>
+
+<div class="card-grid">
+    <div class="stat-card">
+        <div class="label">Total Visits</div>
+        <div class="value">{{ stats.total }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Last 7 Days</div>
+        <div class="value">{{ stats.last_7_days }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Last 30 Days</div>
+        <div class="value">{{ stats.last_30_days }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0;">Today</h2>
+    {% if checked_in_today %}
+    <p class="muted">You've already checked in today ({{ today }}). Nice work!</p>
+    {% else %}
+    <form method="post" action="{{ url_for('attendance.checkin') }}">
+        <button class="btn" type="submit">Check In for Today</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0;">Log a Past Visit</h2>
+    <form method="post" action="{{ url_for('attendance.add') }}">
+        <div class="form-row">
+            <div>
+                <label for="visit_date">Date</label>
+                <input type="date" id="visit_date" name="visit_date" max="{{ today }}" value="{{ today }}" required>
+            </div>
+            <div>
+                <label for="note">Note (optional)</label>
+                <input type="text" id="note" name="note" placeholder="e.g. leg day">
+            </div>
+        </div>
+        <button class="btn" type="submit">Log Visit</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2 style="margin-top:0;">Recent Visits</h2>
+    <div class="table-wrapper">
+        <table class="responsive-table">
+            <thead>
+                <tr><th>Date</th><th>Note</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for visit in recent_visits %}
+                <tr>
+                    <td data-label="Date">{{ visit.visit_date }}</td>
+                    <td data-label="Note">{{ visit.note }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('attendance.delete', visit_date=visit.visit_date) }}" onsubmit="return confirm('Delete this visit?');" style="display:inline;">
+                            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="muted">No visits logged yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
