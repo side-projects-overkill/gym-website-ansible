@@ -34,6 +34,26 @@ body {
     min-height: 100vh;
 }
 
+/* Faint fixed dot-grid texture behind everything, for depth without noise. */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.045) 1px, transparent 0);
+    background-size: 26px 26px;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 620px);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 620px);
+}
+
+/* Custom scrollbar, matches the dark theme instead of the OS default. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); }
+html { scrollbar-color: rgba(255, 255, 255, 0.16) transparent; }
+
 /* Ambient background glow, fixed behind all content */
 .bg-glow {
     position: fixed;
@@ -95,10 +115,20 @@ a:hover { text-decoration: underline; }
     background-clip: text;
     color: transparent;
     letter-spacing: -0.01em;
+    transition: filter 0.15s ease;
 }
-.topnav-links { display: flex; flex-wrap: wrap; gap: 18px; }
-.topnav-links a { color: var(--text-muted); font-size: 0.9rem; padding: 4px 0; font-weight: 500; }
-.topnav-links a:hover { color: var(--text-main); text-decoration: none; }
+.topnav .brand:hover { filter: brightness(1.25); }
+.topnav-links { display: flex; flex-wrap: wrap; gap: 4px; }
+.topnav-links a {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+.topnav-links a:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.05); text-decoration: none; }
+.topnav-links a.active { color: var(--text-main); background: rgba(91, 124, 255, 0.14); }
 
 .nav-toggle {
     display: none;
@@ -131,24 +161,56 @@ p.subtitle { color: var(--text-muted); text-align: center; margin-bottom: 24px; 
 /* Cards */
 .card {
     background: var(--card-bg);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 80px);
     border-radius: 20px;
     border: 1px solid var(--border);
     box-shadow: var(--shadow-glow);
     padding: 22px;
     margin-bottom: 20px;
 }
+@media (prefers-reduced-motion: no-preference) {
+    .card { animation: card-in 0.4s ease both; }
+}
+@keyframes card-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Icon-chip section header, used at the top of cards for visual consistency
+   with the gradient day-headers already used on the plan/food pages. */
+.card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.card-header .icon-chip {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    background-image: var(--accent-gradient);
+    box-shadow: 0 4px 14px rgba(91, 124, 255, 0.35);
+}
+.card-header h2 { margin: 0; }
+.card-header .card-subtitle { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
+
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 12px;
 }
 .stat-card {
+    display: block;
     position: relative;
     overflow: hidden;
     background: var(--card-bg-soft);
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 14px 16px 14px 20px;
+    transition: transform 0.15s ease, border-color 0.15s ease;
 }
 .stat-card::before {
     content: "";
@@ -164,6 +226,57 @@ p.subtitle { color: var(--text-muted); text-align: center; margin-bottom: 24px; 
 .stat-card .label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
 .stat-card .value { font-size: 1.6rem; font-weight: 800; margin-top: 4px; color: var(--text-main); }
 .stat-card .date { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+.stat-card.is-empty {
+    border-style: dashed;
+    background: transparent;
+}
+.stat-card.is-empty::before { opacity: 0.35; }
+.stat-card.is-empty .value { font-size: 0.95rem; font-weight: 600; color: var(--text-dim); }
+.stat-card:hover { transform: translateY(-2px); border-color: rgba(91, 124, 255, 0.4); }
+
+/* Row of check-in / go-to-workout buttons at the top of the dashboard. */
+.quick-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.quick-actions form { display: contents; }
+.quick-action-done { cursor: default; opacity: 0.8; }
+.quick-action-done:hover { transform: none; }
+
+/* Quick-links style tile grid (dashboard, etc.) - a friendlier alternative
+   to a bare bullet list of links. */
+.link-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+}
+.link-tile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--card-bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    color: var(--text-main);
+    text-decoration: none;
+    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.link-tile:hover {
+    transform: translateY(-2px);
+    border-color: rgba(91, 124, 255, 0.4);
+    background: rgba(91, 124, 255, 0.09);
+    text-decoration: none;
+}
+.link-tile .link-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+}
+.link-tile .link-text { font-weight: 600; font-size: 0.88rem; }
 
 /* Tables */
 .table-wrapper { overflow-x: auto; }
@@ -203,8 +316,21 @@ tbody tr:hover { background-color: rgba(255, 255, 255, 0.03); }
 .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(91, 124, 255, 0.45); text-decoration: none; }
 .btn:active { transform: translateY(0); }
 .btn-sm { padding: 6px 14px; font-size: 0.78rem; border-radius: 9px; box-shadow: none; }
-.btn-danger { background-image: linear-gradient(135deg, var(--danger), var(--danger-2)); box-shadow: 0 6px 18px rgba(248, 83, 106, 0.3); }
-.btn-danger:hover { box-shadow: 0 10px 24px rgba(248, 83, 106, 0.4); }
+/* Ghost-style rather than a solid alarming block - delete is a common,
+   low-stakes action here (undo is just "log it again"), so it shouldn't
+   compete visually with primary actions. */
+.btn-danger {
+    background-image: none;
+    background-color: rgba(248, 83, 106, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(248, 83, 106, 0.3);
+    box-shadow: none;
+}
+.btn-danger:hover {
+    background-color: rgba(248, 83, 106, 0.2);
+    color: #ff9aa8;
+    box-shadow: none;
+}
 .btn-secondary { background-image: none; background-color: rgba(255, 255, 255, 0.06); color: var(--text-main); border: 1px solid var(--border); box-shadow: none; }
 .btn-secondary:hover { background-color: rgba(255, 255, 255, 0.1); box-shadow: none; }
 .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
@@ -273,6 +399,259 @@ textarea { font-family: "SF Mono", Consolas, Monaco, "Liberation Mono", monospac
     letter-spacing: 0.01em;
 }
 .day-section table { border-radius: 0 0 14px 14px; }
+
+/* Accordion variant of the day/title pattern above - used for the workout
+   plan, where "today's" day should be open on load and the rest collapsed.
+   Native <details>/<summary> gives us that behavior with zero JS. */
+.day-accordion { margin-bottom: 14px; border-radius: 16px; }
+.day-accordion summary { list-style: none; cursor: pointer; }
+.day-accordion summary::-webkit-details-marker { display: none; }
+.day-accordion .day-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-radius: 16px;
+    transition: border-radius 0.15s ease;
+    user-select: none;
+}
+.day-accordion[open] .day-title { border-radius: 16px 16px 0 0; }
+.day-accordion .day-title-text { display: flex; align-items: center; gap: 10px; }
+.day-accordion .chevron { font-size: 0.8rem; opacity: 0.85; transition: transform 0.2s ease; flex-shrink: 0; }
+.day-accordion[open] .chevron { transform: rotate(180deg); }
+.day-accordion .today-badge {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(255, 255, 255, 0.22);
+    padding: 3px 9px;
+    border-radius: 999px;
+}
+.day-accordion table { border-radius: 0 0 14px 14px; }
+
+/* ---------------------------------------------------------------- */
+/* Dashboard "bento" overview grid                                   */
+/* ---------------------------------------------------------------- */
+.bento-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr 1fr;
+    grid-template-areas:
+        "activity activity goals score"
+        "activity activity goals bmi"
+        "weight   metrics  metrics  distance"
+        "weight   metrics  metrics  distance";
+    gap: 14px;
+    margin-bottom: 20px;
+}
+.bento-card { display: flex; flex-direction: column; margin-bottom: 0; }
+.bento-activity { grid-area: activity; }
+.bento-goals { grid-area: goals; align-items: center; text-align: center; }
+.bento-score { grid-area: score; }
+.bento-bmi { grid-area: bmi; }
+.bento-weight { grid-area: weight; }
+.bento-metrics { grid-area: metrics; }
+.bento-distance { grid-area: distance; position: relative; overflow: hidden; justify-content: flex-end; }
+
+.bento-card-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+/* Activity bars. flex-basis is explicit (not the shorthand's default 0%) so
+   this keeps a sane minimum height even when the card has no extra space to
+   grow into - e.g. on mobile, where .bento-activity no longer spans two
+   grid rows and would otherwise have nothing to distribute the flex-grow
+   into, collapsing the bars to ~0px. */
+.activity-chart { display: flex; align-items: flex-end; gap: 8px; flex: 1 1 110px; }
+.activity-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+.activity-bar {
+    width: 100%;
+    max-width: 30px;
+    min-height: 4px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    transition: height 0.4s ease;
+}
+.activity-bar.is-today { background-image: var(--accent-gradient); box-shadow: 0 4px 14px rgba(91, 124, 255, 0.4); }
+.activity-bar-label { font-size: 0.7rem; color: var(--text-dim); }
+.activity-trend { font-size: 1.7rem; font-weight: 800; margin-top: 14px; color: var(--text-main); }
+.activity-trend.is-up { color: var(--success); }
+.activity-trend.is-down { color: var(--warning); }
+
+/* Circular "ring" progress (weekly goal) */
+.progress-ring {
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    background: conic-gradient(from -90deg, #8b5cf6 calc(var(--pct, 0) * 1%), rgba(255, 255, 255, 0.08) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px auto 10px;
+}
+.progress-ring-inner {
+    width: 72%;
+    height: 72%;
+    border-radius: 50%;
+    background: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.progress-ring-value { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+.progress-ring-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+/* Health score */
+.health-score-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.health-score-value { font-size: 2rem; font-weight: 800; color: var(--text-main); }
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 11px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: rgba(52, 211, 153, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+}
+.badge.is-warning { background: rgba(251, 191, 36, 0.15); color: var(--warning); border-color: rgba(251, 191, 36, 0.3); }
+.badge.is-danger { background: rgba(248, 83, 106, 0.15); color: var(--danger); border-color: rgba(248, 83, 106, 0.3); }
+.badge.is-neutral { background: rgba(255, 255, 255, 0.08); color: var(--text-muted); border-color: var(--border); }
+
+.segmented-bar { display: flex; gap: 4px; margin-top: 14px; }
+.segmented-bar .segment { flex: 1; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); }
+.segmented-bar .segment.filled { background-image: var(--accent-gradient); }
+
+/* Weight goal card */
+.weight-stat-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.weight-stat-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.85rem; }
+.weight-stat-row span { color: var(--text-muted); }
+.weight-stat-row strong { color: var(--text-main); font-size: 0.95rem; }
+canvas.sparkline { display: block; width: 100%; height: 60px; margin-top: auto; }
+
+/* Body metrics list ("Calories Analysis"-style rows) */
+.metric-row-list { display: flex; flex-direction: column; gap: 6px; }
+.metric-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.15s ease;
+}
+.metric-row:hover { background: rgba(255, 255, 255, 0.05); text-decoration: none; }
+.metric-row-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 0.95rem;
+}
+.metric-row-label { flex: 1; font-weight: 600; font-size: 0.85rem; min-width: 70px; }
+.metric-row-value { font-weight: 700; color: var(--text-main); font-size: 0.88rem; min-width: 90px; text-align: right; }
+.metric-row-date { color: var(--text-dim); font-size: 0.76rem; min-width: 90px; text-align: right; }
+@media (max-width: 640px) {
+    .metric-row-date { display: none; }
+}
+
+/* Distance walked - map-flavored hero card */
+.bento-distance::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(circle at 85% 20%, rgba(91, 124, 255, 0.25), transparent 55%),
+        radial-gradient(circle at 1.5px 1.5px, rgba(255, 255, 255, 0.16) 1.5px, transparent 0);
+    background-size: 100% 100%, 22px 22px;
+    pointer-events: none;
+}
+.distance-value { position: relative; font-size: 2.4rem; font-weight: 800; color: var(--text-main); }
+.distance-value small { font-size: 1rem; font-weight: 600; color: var(--text-muted); margin-left: 4px; }
+.bento-distance p { position: relative; }
+.bento-distance .btn { position: relative; align-self: flex-start; margin-top: 12px; }
+
+@media (max-width: 900px) {
+    .bento-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "activity"
+            "goals"
+            "score"
+            "bmi"
+            "weight"
+            "metrics"
+            "distance";
+    }
+    .progress-ring { margin: 4px auto 10px; }
+}
+
+/* Quote-of-the-day banner */
+.quote-card {
+    position: relative;
+    padding-left: 44px;
+    background: linear-gradient(135deg, rgba(91, 124, 255, 0.12), rgba(139, 92, 246, 0.08));
+}
+.quote-card .quote-mark {
+    position: absolute;
+    left: 14px;
+    top: 8px;
+    font-size: 2.4rem;
+    font-family: Georgia, serif;
+    color: var(--accent-2);
+    opacity: 0.5;
+    line-height: 1;
+}
+.quote-card .quote-text { font-size: 1.02rem; font-style: italic; margin: 0 0 6px; color: var(--text-main); }
+.quote-card .quote-author { margin: 0; color: var(--text-muted); font-size: 0.82rem; font-weight: 600; }
+
+/* Two-column layout for content-rich cards (Health Insights / Food Idea) */
+.two-col-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+/* Health insights list */
+.insight-list { display: flex; flex-direction: column; gap: 14px; }
+.insight-row { padding-bottom: 12px; border-bottom: 1px solid var(--border-light); }
+.insight-row:last-child { border-bottom: none; padding-bottom: 0; }
+.insight-main { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.insight-label { font-weight: 600; font-size: 0.88rem; color: var(--text-main); }
+.insight-value { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.92rem; }
+.insight-note { margin: 4px 0 0; color: var(--text-dim); font-size: 0.76rem; }
+
+/* Food idea of the day */
+.food-of-day-name { font-size: 1.15rem; font-weight: 700; color: var(--text-main); }
+.food-of-day-meta { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; }
+.food-of-day-tip { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
+
+/* Progressive-overload: "last logged" + suggestion + inline quick-log form
+   inside the workout accordion table */
+.last-log-value { display: block; font-weight: 700; color: var(--text-main); font-size: 0.85rem; }
+.last-log-date { display: block; color: var(--text-dim); font-size: 0.72rem; }
+.progressive-suggestion { display: block; color: var(--success); font-size: 0.76rem; font-weight: 600; margin-top: 2px; }
+.exercise-log-form { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
+.exercise-log-form input.exercise-log-input {
+    width: 64px;
+    padding: 6px 8px;
+    margin-bottom: 0;
+    font-size: 0.82rem;
+}
+.exercise-log-form input.exercise-log-input-sm { width: 52px; }
 
 .muted { color: var(--text-muted); font-size: 0.85rem; }
 
@@ -376,6 +755,19 @@ canvas.chart { display: block; width: 100%; max-width: 100%; background: var(--c
     text-align: center;
     padding: 56px 16px 40px;
 }
+.hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: rgba(91, 124, 255, 0.12);
+    border: 1px solid rgba(91, 124, 255, 0.3);
+    color: #b9c4ff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
 .hero-title {
     font-size: 2.6rem;
     line-height: 1.15;
@@ -419,8 +811,16 @@ canvas.chart { display: block; width: 100%; max-width: 100%; background: var(--c
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
 }
 .feature-icon {
-    font-size: 1.8rem;
-    margin-bottom: 12px;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    font-size: 1.6rem;
+    margin-bottom: 14px;
+    background-image: linear-gradient(135deg, rgba(91, 124, 255, 0.18), rgba(139, 92, 246, 0.18));
+    border: 1px solid rgba(91, 124, 255, 0.25);
 }
 .feature-card h3 {
     font-size: 1.05rem;
@@ -442,13 +842,23 @@ canvas.chart { display: block; width: 100%; max-width: 100%; background: var(--c
 
 /* === Progress widget (dashboard) === */
 .progress-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 4px 12px;
     border-radius: 999px;
     font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
+}
+.progress-badge::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
 }
 .progress-badge.on_track { background: rgba(52, 211, 153, 0.15); color: var(--success); }
 .progress-badge.mixed { background: rgba(251, 191, 36, 0.15); color: var(--warning); }

@@ -1,4 +1,6 @@
 """Load/save the YAML file that drives the public workout page."""
+from datetime import date
+
 import yaml
 
 from . import yaml_store
@@ -51,3 +53,17 @@ def validate(raw_text):
 
 def save_raw(config_path, raw_text, backup_dir=None):
     yaml_store.save_raw(config_path, raw_text, backup_dir, validate, BACKUP_PREFIX)
+
+
+def pick_today_index(days):
+    """Best-effort guess at "today's" day in the program: cycles through
+    the configured days in order by calendar weekday (Monday -> index 0,
+    Tuesday -> index 1, ...), wrapping around for splits shorter than a
+    week. There's no explicit weekday mapping in the YAML, so this is a
+    simple deterministic default rather than a scheduling feature.
+
+    Returns None if there are no configured days.
+    """
+    if not days:
+        return None
+    return date.today().weekday() % len(days)

@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
     goal_type TEXT NOT NULL DEFAULT 'maintain',
     goal_target_weight REAL,
     goal_weekly_visits INTEGER NOT NULL DEFAULT 3,
+    goal_weekly_walks INTEGER NOT NULL DEFAULT 3,
     created_at TEXT NOT NULL
 );
 
@@ -44,6 +45,17 @@ CREATE TABLE IF NOT EXISTS gym_visits (
     note TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL,
     UNIQUE (user_id, visit_date)
+);
+
+CREATE TABLE IF NOT EXISTS walks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    walk_date TEXT NOT NULL,
+    distance_km REAL,
+    duration_min REAL,
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    UNIQUE (user_id, walk_date)
 );
 
 CREATE TABLE IF NOT EXISTS metric_defs (
@@ -68,9 +80,27 @@ CREATE TABLE IF NOT EXISTS body_logs (
     created_at  TEXT NOT NULL
 );
 
+-- Progressive-overload tracking: one row per logged set (or top set) of an
+-- exercise. `exercise_name` is a free-text match against the YAML workout
+-- config's exercise names rather than an FK, since the config can be
+-- edited/reordered/renamed freely and isn't itself in the database.
+CREATE TABLE IF NOT EXISTS exercise_logs (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       INTEGER NOT NULL REFERENCES users(id),
+    log_date      TEXT NOT NULL,
+    exercise_name TEXT NOT NULL,
+    weight_kg     REAL,
+    reps          INTEGER,
+    sets          INTEGER,
+    note          TEXT NOT NULL DEFAULT '',
+    created_at    TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_body_logs_date ON body_logs(log_date);
 CREATE INDEX IF NOT EXISTS idx_body_logs_metric ON body_logs(metric_key);
 CREATE INDEX IF NOT EXISTS idx_gym_visits_user_date ON gym_visits(user_id, visit_date);
+CREATE INDEX IF NOT EXISTS idx_walks_user_date ON walks(user_id, walk_date);
+CREATE INDEX IF NOT EXISTS idx_exercise_logs_lookup ON exercise_logs(user_id, exercise_name, log_date);
 
 -- Generic small key/value store for app-internal bookkeeping (e.g. the
 -- Telegram poller's last-seen update_id high-water mark).
@@ -88,8 +118,15 @@ DEFAULT_METRICS = [
     ("waist_cm", "Waist", "cm", 4),
     ("chest_cm", "Chest", "cm", 5),
     ("arm_cm", "Arm", "cm", 6),
-    ("resting_hr", "Resting Heart Rate", "bpm", 7),
+    ("hip_cm", "Hips", "cm", 7),
+    ("thigh_cm", "Thighs", "cm", 8),
 ]
+
+# Metrics that used to be in DEFAULT_METRICS above and were retired -
+# _migrate_metric_catalog() below removes them (and their logged history,
+# mirroring what the "delete metric" button in the UI already does) for
+# every existing user, not just future registrations.
+RETIRED_DEFAULT_METRIC_KEYS = ("resting_hr",)
 
 
 def _connect(db_path):
@@ -214,6 +251,35 @@ def _migrate_body_logs_drop_fk(conn):
     conn.execute("ALTER TABLE body_logs_new RENAME TO body_logs")
 
 
+def _migrate_metric_catalog(conn):
+    """Retroactively apply DEFAULT_METRICS additions/removals to every
+    existing user, not just future registrations - `seed_default_metrics`
+    only ever runs once, at account activation. Safe to call every
+    startup: the INSERTs are idempotent (OR IGNORE against the composite
+    PK) and the DELETEs are no-ops once the retired rows are gone."""
+    users_exists = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'users'"
+    ).fetchone()
+    if users_exists is None:
+        return
+
+    user_ids = [row[0] for row in conn.execute("SELECT id FROM users")]
+    new_keys = {"hip_cm", "thigh_cm"}
+    for user_id in user_ids:
+        for key, label, unit, sort_order in DEFAULT_METRICS:
+            if key not in new_keys:
+                continue
+            conn.execute(
+                "INSERT OR IGNORE INTO metric_defs (metric_key, label, unit, sort_order, user_id) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (key, label, unit, sort_order, user_id),
+            )
+
+    for key in RETIRED_DEFAULT_METRIC_KEYS:
+        conn.execute("DELETE FROM body_logs WHERE metric_key = ?", (key,))
+        conn.execute("DELETE FROM metric_defs WHERE metric_key = ?", (key,))
+
+
 def init_db(db_path):
     """Create tables and run lightweight migrations. Safe to call every startup."""
     conn = _connect(db_path)
@@ -228,6 +294,10 @@ def init_db(db_path):
         _add_column_if_missing(
             conn, "body_logs", "user_id", "user_id INTEGER REFERENCES users(id)"
         )
+        _add_column_if_missing(
+            conn, "users", "goal_weekly_walks", "goal_weekly_walks INTEGER NOT NULL DEFAULT 3"
+        )
+        _migrate_metric_catalog(conn)
         conn.commit()
         conn.execute("PRAGMA foreign_keys = ON")
     finally:
@@ -316,12 +386,12 @@ def set_user_password(user_id, password_hash):
     db.commit()
 
 
-def update_user_goals(user_id, goal_type, goal_target_weight, goal_weekly_visits):
+def update_user_goals(user_id, goal_type, goal_target_weight, goal_weekly_visits, goal_weekly_walks):
     db = get_db()
     db.execute(
-        "UPDATE users SET goal_type = ?, goal_target_weight = ?, goal_weekly_visits = ? "
-        "WHERE id = ?",
-        (goal_type, goal_target_weight, goal_weekly_visits, user_id),
+        "UPDATE users SET goal_type = ?, goal_target_weight = ?, goal_weekly_visits = ?, "
+        "goal_weekly_walks = ? WHERE id = ?",
+        (goal_type, goal_target_weight, goal_weekly_visits, goal_weekly_walks, user_id),
     )
     db.commit()
 
@@ -436,6 +506,102 @@ def total_visit_count(user_id):
         "SELECT COUNT(*) AS n FROM gym_visits WHERE user_id = ?", (user_id,)
     ).fetchone()
     return row["n"]
+
+
+# ---- walking tracker (mirrors gym visits above) -----------------------------
+
+def checkin_walk(user_id, walk_date, distance_km=None, duration_min=None, note=""):
+    db = get_db()
+    cur = db.execute(
+        "INSERT OR IGNORE INTO walks (user_id, walk_date, distance_km, duration_min, note, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (user_id, walk_date, distance_km, duration_min, note, now_iso()),
+    )
+    db.commit()
+    return cur.rowcount > 0
+
+
+def delete_walk(user_id, walk_date):
+    db = get_db()
+    db.execute(
+        "DELETE FROM walks WHERE user_id = ? AND walk_date = ?",
+        (user_id, walk_date),
+    )
+    db.commit()
+
+
+def list_recent_walks(user_id, limit=60):
+    db = get_db()
+    return db.execute(
+        "SELECT * FROM walks WHERE user_id = ? ORDER BY walk_date DESC LIMIT ?",
+        (user_id, limit),
+    ).fetchall()
+
+
+def count_walks_since(user_id, since_date):
+    db = get_db()
+    row = db.execute(
+        "SELECT COUNT(*) AS n FROM walks WHERE user_id = ? AND walk_date >= ?",
+        (user_id, since_date),
+    ).fetchone()
+    return row["n"]
+
+
+def total_walk_count(user_id):
+    db = get_db()
+    row = db.execute(
+        "SELECT COUNT(*) AS n FROM walks WHERE user_id = ?", (user_id,)
+    ).fetchone()
+    return row["n"]
+
+
+# ---- progressive-overload exercise logs -----------------------------------
+
+def log_exercise(user_id, log_date, exercise_name, weight_kg=None, reps=None, sets=None, note=""):
+    db = get_db()
+    db.execute(
+        "INSERT INTO exercise_logs (user_id, log_date, exercise_name, weight_kg, reps, sets, note, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (user_id, log_date, exercise_name, weight_kg, reps, sets, note, now_iso()),
+    )
+    db.commit()
+
+
+def latest_exercise_log(user_id, exercise_name):
+    db = get_db()
+    return db.execute(
+        "SELECT * FROM exercise_logs WHERE user_id = ? AND exercise_name = ? "
+        "ORDER BY log_date DESC, id DESC LIMIT 1",
+        (user_id, exercise_name),
+    ).fetchone()
+
+
+def latest_exercise_logs_by_name(user_id):
+    """One row per exercise name: whichever log is most recent for that
+    exercise. Used to annotate a whole workout day's exercises in a single
+    query instead of one round-trip per exercise."""
+    db = get_db()
+    rows = db.execute(
+        """
+        SELECT el.* FROM exercise_logs el
+        WHERE el.user_id = ? AND el.id = (
+            SELECT id FROM exercise_logs
+            WHERE user_id = el.user_id AND exercise_name = el.exercise_name
+            ORDER BY log_date DESC, id DESC LIMIT 1
+        )
+        """,
+        (user_id,),
+    ).fetchall()
+    return {row["exercise_name"]: row for row in rows}
+
+
+def list_exercise_history(user_id, exercise_name, limit=20):
+    db = get_db()
+    return db.execute(
+        "SELECT * FROM exercise_logs WHERE user_id = ? AND exercise_name = ? "
+        "ORDER BY log_date DESC, id DESC LIMIT ?",
+        (user_id, exercise_name, limit),
+    ).fetchall()
 
 
 # ---- metric definitions -------------------------------------------------

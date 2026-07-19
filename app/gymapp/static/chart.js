@@ -88,3 +88,50 @@ async function loadAndDrawChart(metricKey, canvas, emptyEl) {
     const data = await fetchMetricHistory(metricKey);
     drawTrendChart(canvas, data.points || [], emptyEl);
 }
+
+/* Minimal axis-less line, for compact "bento" cards (e.g. the dashboard's
+   weight-goal widget) where drawTrendChart's labels/padding would be too
+   cramped at a small canvas height. */
+function drawSparkline(canvas, points) {
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.clientWidth;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    if (!points || points.length < 2) return;
+
+    const pad = 4;
+    const values = points.map(p => p.value);
+    const minV = Math.min(...values), maxV = Math.max(...values);
+    const range = (maxV - minV) || 1;
+    const xAt = (i) => pad + (i / (points.length - 1)) * (w - pad * 2);
+    const yAt = (v) => h - pad - ((v - minV) / range) * (h - pad * 2);
+
+    const fillGradient = ctx.createLinearGradient(0, 0, 0, h);
+    fillGradient.addColorStop(0, 'rgba(91, 124, 255, 0.3)');
+    fillGradient.addColorStop(1, 'rgba(91, 124, 255, 0)');
+    ctx.fillStyle = fillGradient;
+    ctx.beginPath();
+    ctx.moveTo(xAt(0), h - pad);
+    points.forEach((p, i) => ctx.lineTo(xAt(i), yAt(p.value)));
+    ctx.lineTo(xAt(points.length - 1), h - pad);
+    ctx.closePath();
+    ctx.fill();
+
+    const lineGradient = ctx.createLinearGradient(0, 0, w, 0);
+    lineGradient.addColorStop(0, '#5b7cff');
+    lineGradient.addColorStop(1, '#8b5cf6');
+    ctx.strokeStyle = lineGradient;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    points.forEach((p, i) => {
+        const x = xAt(i), y = yAt(p.value);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+}
+
+async function loadAndDrawSparkline(metricKey, canvas) {
+    const data = await fetchMetricHistory(metricKey);
+    drawSparkline(canvas, data.points || []);
+}

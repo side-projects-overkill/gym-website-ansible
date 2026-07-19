@@ -23,10 +23,12 @@ def goals():
         goal_type = request.form.get("goal_type", "").strip()
         raw_target_weight = request.form.get("goal_target_weight", "").strip()
         raw_weekly_visits = request.form.get("goal_weekly_visits", "").strip()
+        raw_weekly_walks = request.form.get("goal_weekly_walks", "").strip()
 
         error = None
         goal_target_weight = None
         goal_weekly_visits = None
+        goal_weekly_walks = None
 
         if goal_type not in ALLOWED_GOAL_TYPES:
             error = "Please choose a valid goal type."
@@ -38,6 +40,14 @@ def goals():
                     raise ValueError
             except ValueError:
                 error = "Weekly visit goal must be a positive whole number."
+
+        if not error:
+            try:
+                goal_weekly_walks = int(raw_weekly_walks)
+                if goal_weekly_walks <= 0:
+                    raise ValueError
+            except ValueError:
+                error = "Weekly walk goal must be a positive whole number."
 
         if not error and raw_target_weight:
             try:
@@ -51,7 +61,9 @@ def goals():
             flash(error, "error")
             return redirect(url_for("goals.goals"))
 
-        db.update_user_goals(user_id, goal_type, goal_target_weight, goal_weekly_visits)
+        db.update_user_goals(
+            user_id, goal_type, goal_target_weight, goal_weekly_visits, goal_weekly_walks
+        )
         flash("Goals updated.", "success")
         return redirect(url_for("goals.goals"))
 

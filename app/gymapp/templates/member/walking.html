@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Walking - Gym Tracker{% endblock %}
+{% block content %}
+<h1>Walking</h1>
+<p class="subtitle">Log a walk every day you get moving and watch your streak grow.</p>
+
+<div class="card-grid">
+    <div class="stat-card">
+        <div class="label">Total Walks</div>
+        <div class="value">{{ stats.total }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Last 7 Days</div>
+        <div class="value">{{ stats.last_7_days }} <small>/ {{ current_user.goal_weekly_walks }} goal</small></div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Last 30 Days</div>
+        <div class="value">{{ stats.last_30_days }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="icon-chip">🚶</div>
+        <h2 style="margin:0;">Today</h2>
+    </div>
+    {% if walked_today %}
+    <p class="muted">You've already logged a walk today ({{ today }}). Nice work!</p>
+    {% else %}
+    <form method="post" action="{{ url_for('walking.checkin') }}">
+        <button class="btn" type="submit">Check In a Walk for Today</button>
+    </form>
+    {% endif %}
+    <p style="margin:12px 0 0;"><a href="{{ url_for('goals.goals') }}">Update your weekly walk goal</a></p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="icon-chip">➕</div>
+        <h2 style="margin:0;">Log a Past Walk</h2>
+    </div>
+    <form method="post" action="{{ url_for('walking.add') }}">
+        <div class="form-row">
+            <div>
+                <label for="walk_date">Date</label>
+                <input type="date" id="walk_date" name="walk_date" max="{{ today }}" value="{{ today }}" required>
+            </div>
+            <div>
+                <label for="distance_km">Distance (km, optional)</label>
+                <input type="number" step="any" min="0" id="distance_km" name="distance_km" placeholder="e.g. 3.5">
+            </div>
+            <div>
+                <label for="duration_min">Duration (min, optional)</label>
+                <input type="number" step="any" min="0" id="duration_min" name="duration_min" placeholder="e.g. 30">
+            </div>
+        </div>
+        <label for="note">Note (optional)</label>
+        <input type="text" id="note" name="note" placeholder="e.g. evening walk">
+        <button class="btn" type="submit">Log Walk</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="icon-chip">🗓️</div>
+        <h2 style="margin:0;">Recent Walks</h2>
+    </div>
+    <div class="table-wrapper">
+        <table class="responsive-table">
+            <thead>
+                <tr><th>Date</th><th>Distance</th><th>Duration</th><th>Note</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for walk in recent_walks %}
+                <tr>
+                    <td data-label="Date">{{ walk.walk_date }}</td>
+                    <td data-label="Distance">{{ (walk.distance_km ~ " km") if walk.distance_km is not none else "-" }}</td>
+                    <td data-label="Duration">{{ (walk.duration_min ~ " min") if walk.duration_min is not none else "-" }}</td>
+                    <td data-label="Note">{{ walk.note }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('walking.delete', walk_date=walk.walk_date) }}" onsubmit="return confirm('Delete this walk?');" style="display:inline;">
+                            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="muted">No walks logged yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

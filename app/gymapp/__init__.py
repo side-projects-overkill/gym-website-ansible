@@ -40,13 +40,26 @@ def create_app(data_dir=None):
     db_module.init_db(app.config["DB_PATH"])
     app.teardown_appcontext(db_module.close_db)
 
-    from . import attendance, goals, member, public, registration
+    from . import attendance, goals, member, public, registration, walking
 
     app.register_blueprint(public.bp)
     app.register_blueprint(member.bp)
     app.register_blueprint(registration.bp)
     app.register_blueprint(attendance.bp)
     app.register_blueprint(goals.bp)
+    app.register_blueprint(walking.bp)
+
+    # Cache-busting query string for static assets, derived from the newest
+    # mtime under static/ (deterministic across all gunicorn workers, unlike
+    # a random per-process token). This app is fronted by an external CDN/
+    # cache we don't control (see templates using `asset_version`), which
+    # otherwise happily keeps serving a stale style.css/chart.js for hours
+    # after a deploy since it doesn't respect the origin's Cache-Control.
+    app.config["ASSET_VERSION"] = _compute_asset_version(app.static_folder)
+
+    @app.context_processor
+    def _inject_asset_version():
+        return {"asset_version": app.config["ASSET_VERSION"]}
 
     if app.config["ENABLE_TELEGRAM_POLLER"] and app.config["TELEGRAM_HELPER_API_BASE"]:
         from . import telegram_poller
@@ -59,6 +72,17 @@ def create_app(data_dir=None):
 def _seed_if_missing(dest_path, seed_path):
     if not os.path.exists(dest_path) and os.path.exists(seed_path):
         shutil.copy2(seed_path, dest_path)
+
+
+def _compute_asset_version(static_folder):
+    try:
+        newest = max(
+            os.path.getmtime(os.path.join(static_folder, name))
+            for name in os.listdir(static_folder)
+        )
+        return str(int(newest))
+    except (OSError, ValueError):
+        return "0"
 
 
 def _load_secret_key(data_dir):

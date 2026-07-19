@@ -20,7 +20,10 @@
 </div>
 
 <div class="card">
-    <h2 style="margin-top:0;">Today</h2>
+    <div class="card-header">
+        <div class="icon-chip">📅</div>
+        <h2 style="margin:0;">Today</h2>
+    </div>
     {% if checked_in_today %}
     <p class="muted">You've already checked in today ({{ today }}). Nice work!</p>
     {% else %}
@@ -31,7 +34,10 @@
 </div>
 
 <div class="card">
-    <h2 style="margin-top:0;">Log a Past Visit</h2>
+    <div class="card-header">
+        <div class="icon-chip">➕</div>
+        <h2 style="margin:0;">Log a Past Visit</h2>
+    </div>
     <form method="post" action="{{ url_for('attendance.add') }}">
         <div class="form-row">
             <div>
@@ -48,7 +54,10 @@
 </div>
 
 <div class="card">
-    <h2 style="margin-top:0;">Recent Visits</h2>
+    <div class="card-header">
+        <div class="icon-chip">🗓️</div>
+        <h2 style="margin:0;">Recent Visits</h2>
+    </div>
     <div class="table-wrapper">
         <table class="responsive-table">
             <thead>

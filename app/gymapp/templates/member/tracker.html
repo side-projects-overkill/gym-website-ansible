@@ -5,7 +5,10 @@
 <p class="subtitle">Log height, weight, or any custom metric over time.</p>
 
 <div class="card">
-    <h2 style="margin-top:0;">Log a New Entry</h2>
+    <div class="card-header">
+        <div class="icon-chip">📝</div>
+        <h2 style="margin:0;">Log a New Entry</h2>
+    </div>
     <form method="post" action="{{ url_for('member.tracker_add') }}">
         <div class="form-row">
             <div>
@@ -16,13 +19,13 @@
                 <label for="metric_key">Metric</label>
                 <select id="metric_key" name="metric_key" required>
                     {% for d in defs %}
-                    <option value="{{ d.metric_key }}">{{ d.label }} ({{ d.unit }})</option>
+                    <option value="{{ d.metric_key }}" {% if metric_filter == d.metric_key %}selected{% endif %}>{{ d.label }} ({{ d.unit }})</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
                 <label for="value">Value</label>
-                <input type="number" step="any" id="value" name="value" required>
+                <input type="number" step="any" id="value" name="value" {% if metric_filter %}autofocus{% endif %} required>
             </div>
         </div>
         <label for="notes">Notes (optional)</label>
@@ -35,13 +38,16 @@
 </div>
 
 <div class="card">
-    <h2 style="margin-top:0;">Trend</h2>
+    <div class="card-header">
+        <div class="icon-chip">📈</div>
+        <h2 style="margin:0;">Trend</h2>
+    </div>
     <div class="form-row" style="align-items:end;">
         <div>
             <label for="chart_metric">Metric</label>
             <select id="chart_metric">
                 {% for d in defs %}
-                <option value="{{ d.metric_key }}">{{ d.label }} ({{ d.unit }})</option>
+                <option value="{{ d.metric_key }}" {% if metric_filter == d.metric_key %}selected{% endif %}>{{ d.label }} ({{ d.unit }})</option>
                 {% endfor %}
             </select>
         </div>
@@ -51,7 +57,10 @@
 </div>
 
 <div class="card">
-    <h2 style="margin-top:0;">History</h2>
+    <div class="card-header">
+        <div class="icon-chip">🗒️</div>
+        <h2 style="margin:0;">History</h2>
+    </div>
     <form method="get" style="margin-bottom:12px;">
         <div class="form-row" style="align-items:end;">
             <div>
@@ -94,7 +103,7 @@
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='chart.js') }}"></script>
+<script src="{{ url_for('static', filename='chart.js') }}?v={{ asset_version }}"></script>
 <script>
 const trendCanvas = document.getElementById('trendChart');
 const trendEmpty = document.getElementById('chartEmpty');

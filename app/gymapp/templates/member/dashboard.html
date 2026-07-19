@@ -1,57 +1,193 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - Gym Tracker{% endblock %}
 {% block content %}
+{% set badge_class = {'on_track': '', 'mixed': 'is-warning', 'off_track': 'is-danger', 'insufficient_data': 'is-neutral'} %}
+{% set metric_icons = {'weight_kg': '⚖️', 'height_cm': '📏', 'body_fat_pct': '🔥', 'waist_cm': '📐', 'chest_cm': '🫁', 'arm_cm': '💪', 'hip_cm': '🦴', 'thigh_cm': '🦵'} %}
 <h1>Dashboard</h1>
 <p class="subtitle">Latest logged metrics at a glance</p>
 
 <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-        <div>
-            <h2 style="margin:0 0 6px;">Progress</h2>
-            <span class="progress-badge {{ progress_result.status }}">{{ progress_result.status.replace('_', ' ') }}</span>
-        </div>
+    <div class="card-header">
+        <div class="icon-chip">⚡</div>
+        <h2 style="margin:0;">Quick Actions</h2>
+    </div>
+    <div class="quick-actions">
         {% if checked_in_today %}
-        <span class="muted">✅ Checked in today</span>
+        <span class="btn btn-secondary quick-action-done">✅ Checked in today</span>
         {% else %}
         <form method="post" action="{{ url_for('attendance.checkin') }}">
             <input type="hidden" name="redirect_to" value="dashboard">
-            <button class="btn" type="submit">Check In for Today</button>
+            <button class="btn" type="submit">🏋️ Check In to Gym</button>
         </form>
         {% endif %}
-    </div>
-    <p style="margin:12px 0 0;">{{ progress_result.message }}</p>
-    <div class="progress-signals">
-        <div class="progress-signal">
-            <strong>Attendance:</strong> {{ progress_result.attendance_signal.detail }}
-        </div>
-        <div class="progress-signal">
-            <strong>Weight:</strong> {{ progress_result.weight_signal.detail }}
-        </div>
-    </div>
-    <p style="margin:12px 0 0;">
-        <a href="{{ url_for('attendance.attendance') }}">View attendance history</a>
-        &middot;
-        <a href="{{ url_for('goals.goals') }}">Update goals</a>
-    </p>
-</div>
 
-<div class="card-grid">
-    {% for row in latest %}
-    <div class="stat-card">
-        <div class="label">{{ row.label }}</div>
-        {% if row.value is not none %}
-        <div class="value">{{ row.value }} <small>{{ row.unit }}</small></div>
-        <div class="date">as of {{ row.log_date }}</div>
+        {% if walked_today %}
+        <span class="btn btn-secondary quick-action-done">✅ Walked today</span>
         {% else %}
-        <div class="value muted">No data yet</div>
+        <form method="post" action="{{ url_for('walking.checkin') }}">
+            <input type="hidden" name="redirect_to" value="dashboard">
+            <button class="btn" type="submit">🚶 Check In a Walk</button>
+        </form>
+        {% endif %}
+
+        {% if todays_workout %}
+        <a class="btn btn-secondary" href="#todays-workout">💪 {{ todays_workout.name }}</a>
+        {% else %}
+        <a class="btn btn-secondary" href="{{ url_for('member.plan') }}">💪 View Workout Plan</a>
         {% endif %}
     </div>
-    {% endfor %}
+</div>
+
+{% if daily_quote %}
+<div class="card quote-card">
+    <div class="quote-mark">&ldquo;</div>
+    <p class="quote-text">{{ daily_quote.text }}</p>
+    <p class="quote-author">&mdash; {{ daily_quote.author }}</p>
+</div>
+{% endif %}
+
+<div class="bento-grid">
+    <div class="card bento-card bento-activity">
+        <div class="bento-card-title">Activity</div>
+        <div class="activity-chart">
+            {% for d in weekly_activity.days %}
+            <div class="activity-bar-col">
+                <div class="activity-bar{{ ' is-today' if d.is_today }}" style="height: {{ d.height_pct }}%;"></div>
+                <span class="activity-bar-label">{{ d.label }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="activity-trend {{ 'is-up' if weekly_activity.trend_pct >= 0 else 'is-down' }}">{{ '+' if weekly_activity.trend_pct >= 0 }}{{ weekly_activity.trend_pct }}%</div>
+        <p class="muted" style="margin:2px 0 0;">This week's activity (gym + walks) is {{ 'higher' if weekly_activity.trend_pct >= 0 else 'lower' }} than last week.</p>
+    </div>
+
+    <div class="card bento-card bento-goals">
+        <div class="bento-card-title">Weekly Goal</div>
+        <div class="progress-ring" style="--pct: {{ weekly_goal_pct }};">
+            <div class="progress-ring-inner">
+                <div class="progress-ring-value">{{ weekly_goal_pct }}%</div>
+                <div class="progress-ring-sub">{{ progress_result.attendance_signal.visits_this_week }}/{{ progress_result.attendance_signal.goal_weekly_visits }} visits</div>
+            </div>
+        </div>
+        <p class="muted" style="margin:0;">{{ "Goal reached - nice work!" if weekly_goal_pct >= 100 else "Keep pushing to reach your goal." }}</p>
+    </div>
+
+    <div class="card bento-card bento-score">
+        <div class="bento-card-title">Health Score</div>
+        <div class="health-score-row">
+            <span class="health-score-value">{{ health_score }}%</span>
+            <span class="badge {{ badge_class[progress_result.status] }}">{{ health_label }}</span>
+        </div>
+        <div class="segmented-bar">
+            {% for i in range(5) %}<span class="segment{{ ' filled' if i < (health_score // 20) }}"></span>{% endfor %}
+        </div>
+        <p class="muted" style="margin-top:10px; font-size:0.8rem;">{{ progress_result.message }}</p>
+    </div>
+
+    <div class="card bento-card bento-bmi">
+        <div class="bento-card-title">BMI</div>
+        {% if bmi %}
+        <div class="health-score-row">
+            <span class="health-score-value" style="font-size:1.6rem;">{{ bmi.value }}</span>
+            <span class="badge {{ 'is-neutral' if bmi.category == 'Normal' else 'is-warning' }}">{{ bmi.category }}</span>
+        </div>
+        <p class="muted" style="margin-top:8px;">From your latest weight &amp; height.</p>
+        {% else %}
+        <p class="muted">Log your weight &amp; height to see this.</p>
+        {% endif %}
+    </div>
+
+    <div class="card bento-card bento-weight">
+        <div class="bento-card-title">Weight Goal</div>
+        <div class="weight-stat-list">
+            <div class="weight-stat-row">
+                <span>Current Weight</span>
+                <strong>{{ (weight_goal.current_weight ~ " kg") if weight_goal.current_weight is not none else "—" }}</strong>
+            </div>
+            <div class="weight-stat-row">
+                <span>Weight Goal</span>
+                <strong>{{ (weight_goal.goal_target_weight ~ " kg") if weight_goal.goal_target_weight is not none else "Not set" }}</strong>
+            </div>
+            <div class="weight-stat-row">
+                <span>Entries Logged</span>
+                <strong>{{ weight_goal.entries_logged }}</strong>
+            </div>
+        </div>
+        <canvas id="weightSparkline" class="sparkline"></canvas>
+    </div>
+
+    <div class="card bento-card bento-metrics">
+        <div class="bento-card-title">Body Metrics</div>
+        <div class="metric-row-list">
+            {% for row in latest %}
+            <a class="metric-row" href="{{ url_for('member.tracker', metric=row.metric_key) }}">
+                <span class="metric-row-icon">{{ metric_icons.get(row.metric_key, '🔹') }}</span>
+                <span class="metric-row-label">{{ row.label }}</span>
+                <span class="metric-row-value">{{ (row.value ~ " " ~ row.unit) if row.value is not none else "No data" }}</span>
+                <span class="metric-row-date">{{ row.log_date or "" }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card bento-card bento-distance">
+        <div class="distance-value">{{ distance_month_km }}<small>km</small></div>
+        <p class="muted" style="margin:4px 0 0;">Total distance walked this month{{ " (" ~ walks_this_month ~ " walks)" if walks_this_month }}</p>
+        <a class="btn" href="{{ url_for('walking.walking') }}">View Activity</a>
+    </div>
+</div>
+
+<div class="two-col-grid">
+    <div class="card">
+        <div class="card-header">
+            <div class="icon-chip">🩺</div>
+            <h2 style="margin:0;">Health Insights</h2>
+        </div>
+        {% if health_insights %}
+        <div class="insight-list">
+            {% for insight in health_insights %}
+            <div class="insight-row">
+                <div class="insight-main">
+                    <span class="insight-label">{{ insight.label }}</span>
+                    <span class="insight-value">{{ insight.value }}{% if insight.category %} <span class="badge {{ insight.tone }}">{{ insight.category }}</span>{% endif %}</span>
+                </div>
+                <p class="insight-note">{{ insight.note }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="muted" style="margin-top:12px; font-size:0.72rem;">General population guidelines, not medical advice.</p>
+        {% else %}
+        <p class="muted">Log your weight &amp; height to unlock personalized insights here.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="icon-chip">🥗</div>
+            <h2 style="margin:0;">Food Idea for Today</h2>
+        </div>
+        {% if food_of_day %}
+        <div class="food-of-day">
+            <div class="food-of-day-name">{{ food_of_day.name }}</div>
+            <div class="food-of-day-meta">
+                <span class="badge is-neutral">{{ food_of_day.category }}</span>
+                <span class="muted">{{ food_of_day.calories_per_100g }} kcal/100g</span>
+            </div>
+            {% if food_of_day.tip %}<p class="food-of-day-tip">{{ food_of_day.tip }}</p>{% endif %}
+        </div>
+        <p style="margin-top:12px;"><a href="{{ url_for('member.food_guide') }}">View full food guide &rarr;</a></p>
+        {% else %}
+        <p class="muted">Add foods to your guide to see a daily pick here. <a href="{{ url_for('member.foods_editor') }}">Set up your food guide</a>.</p>
+        {% endif %}
+    </div>
 </div>
 
 {% if weight_def %}
 <div class="card">
-    <h2 style="margin-top:0;">Log Today's Weight</h2>
+    <div class="card-header">
+        <div class="icon-chip">⚖️</div>
+        <h2 style="margin:0;">Log Today's Weight</h2>
+    </div>
     <form method="post" action="{{ url_for('member.tracker_add') }}">
         <input type="hidden" name="redirect_to" value="dashboard">
         <input type="hidden" name="metric_key" value="{{ weight_metric }}">
@@ -74,22 +210,47 @@
 </div>
 {% endif %}
 
-<div class="card">
-    <h2 style="margin-top:0;">Quick Links</h2>
-    <p><a href="{{ url_for('member.plan') }}">🏋️ View your workout plan</a></p>
-    <p><a href="{{ url_for('member.tracker') }}">📈 Full tracker (all metrics, history, export)</a></p>
-    <p><a href="{{ url_for('member.config_editor') }}">✏️ Edit the workout program (YAML)</a></p>
-    <p><a href="{{ url_for('member.foods_editor') }}">🥗 Edit the high-volume food guide</a></p>
-    <p><a href="{{ url_for('member.food_guide') }}">🥗 View the food guide (weight-loss food ideas)</a></p>
-    <p><a href="{{ url_for('member.metrics') }}">⚙️ Manage trackable metric types</a></p>
-    <p><a href="{{ url_for('member.export_logs_csv') }}">⬇️ Export all logs as CSV</a></p>
-    <p><a href="{{ url_for('attendance.attendance') }}">🔥 Track gym attendance</a></p>
-    <p><a href="{{ url_for('goals.goals') }}">🎯 Set your goals</a></p>
+<div class="card" id="todays-workout">
+    <div class="card-header">
+        <div class="icon-chip">🏋️</div>
+        <h2 style="margin:0;">Workout Plan</h2>
+    </div>
+    {% if days %}
+    {% set redirect_to = 'dashboard' %}
+    {% include "member/_workout_accordion.html" %}
+    {% else %}
+    <p class="muted">No workout days configured yet. <a href="{{ url_for('member.config_editor') }}">Add your program</a> to see today's workout here.</p>
+    {% endif %}
 </div>
 
-{% if weight_def %}
-<script src="{{ url_for('static', filename='chart.js') }}"></script>
+<div class="card">
+    <div class="card-header">
+        <div class="icon-chip">🔗</div>
+        <h2 style="margin:0;">Quick Links</h2>
+    </div>
+    <div class="link-grid">
+        <a class="link-tile" href="{{ url_for('member.plan') }}"><span class="link-icon">🏋️</span><span class="link-text">View your workout plan</span></a>
+        <a class="link-tile" href="{{ url_for('member.tracker') }}"><span class="link-icon">📈</span><span class="link-text">Full tracker &amp; history</span></a>
+        <a class="link-tile" href="{{ url_for('member.config_editor') }}"><span class="link-icon">✏️</span><span class="link-text">Edit workout program (YAML)</span></a>
+        <a class="link-tile" href="{{ url_for('member.foods_editor') }}"><span class="link-icon">🥗</span><span class="link-text">Edit the food guide</span></a>
+        <a class="link-tile" href="{{ url_for('member.food_guide') }}"><span class="link-icon">🥑</span><span class="link-text">View the food guide</span></a>
+        <a class="link-tile" href="{{ url_for('member.metrics') }}"><span class="link-icon">⚙️</span><span class="link-text">Manage metric types</span></a>
+        <a class="link-tile" href="{{ url_for('member.export_logs_csv') }}"><span class="link-icon">⬇️</span><span class="link-text">Export all logs (CSV)</span></a>
+        <a class="link-tile" href="{{ url_for('attendance.attendance') }}"><span class="link-icon">🔥</span><span class="link-text">Track gym attendance</span></a>
+        <a class="link-tile" href="{{ url_for('walking.walking') }}"><span class="link-icon">🚶</span><span class="link-text">Track walking</span></a>
+        <a class="link-tile" href="{{ url_for('goals.goals') }}"><span class="link-icon">🎯</span><span class="link-text">Set your goals</span></a>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='chart.js') }}?v={{ asset_version }}"></script>
 <script>
+const sparklineCanvas = document.getElementById('weightSparkline');
+if (sparklineCanvas) {
+    const loadSparkline = () => loadAndDrawSparkline('{{ weight_metric }}', sparklineCanvas);
+    loadSparkline();
+    window.addEventListener('resize', loadSparkline);
+}
+{% if weight_def %}
 const trendCanvas = document.getElementById('trendChart');
 const trendEmpty = document.getElementById('chartEmpty');
 if (trendCanvas) {
@@ -97,6 +258,6 @@ if (trendCanvas) {
     load();
     window.addEventListener('resize', load);
 }
-</script>
 {% endif %}
+</script>
 {% endblock %}

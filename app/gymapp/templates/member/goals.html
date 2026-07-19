@@ -15,7 +15,10 @@
 {% endif %}
 
 <div class="card" style="max-width:480px;">
-    <h2 style="margin-top:0;">Your Goal</h2>
+    <div class="card-header">
+        <div class="icon-chip">🎯</div>
+        <h2 style="margin:0;">Your Goal</h2>
+    </div>
     <form method="post" action="{{ url_for('goals.goals') }}">
         <label for="goal_type">Goal type</label>
         <select id="goal_type" name="goal_type" required>
@@ -29,9 +32,13 @@
                value="{{ user.goal_target_weight if user.goal_target_weight is not none else '' }}"
                placeholder="e.g. 75.0">
 
-        <label for="goal_weekly_visits">Weekly visit goal</label>
+        <label for="goal_weekly_visits">Weekly gym visit goal</label>
         <input type="number" step="1" min="1" id="goal_weekly_visits" name="goal_weekly_visits"
                value="{{ user.goal_weekly_visits }}" required>
+
+        <label for="goal_weekly_walks">Weekly walk goal</label>
+        <input type="number" step="1" min="1" id="goal_weekly_walks" name="goal_weekly_walks"
+               value="{{ user.goal_weekly_walks }}" required>
 
         <button class="btn" type="submit">Save Goals</button>
     </form>

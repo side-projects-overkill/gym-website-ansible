@@ -1,0 +1,70 @@
+{# Renders `days` as an accordion, open by default at `today_index` and
+   collapsed everywhere else - native <details>/<summary>, so this needs no
+   JS at all. Included from plan.html and dashboard.html.
+
+   Expects each exercise dict to already carry `last_log` / `suggestion`
+   keys (see progressive_load.annotate_days, called by member.py before
+   rendering). `redirect_to` controls where the inline quick-log form sends
+   you back to - defaults to the plan page. #}
+{% set _redirect_to = redirect_to|default('plan') %}
+{% for day in days %}
+<details class="day-accordion" {% if loop.index0 == today_index %}open{% endif %}>
+    <summary class="day-title">
+        <span class="day-title-text">
+            {{ day.name }}
+            {% if loop.index0 == today_index %}<span class="today-badge">Today</span>{% endif %}
+        </span>
+        <span class="chevron">▾</span>
+    </summary>
+    <div class="table-wrapper">
+        <table class="responsive-table">
+            <thead>
+                <tr>
+                    <th>Exercise</th>
+                    <th>Sets x Reps</th>
+                    <th>Rest</th>
+                    <th>Form Focus</th>
+                    <th>Last Logged</th>
+                    <th>Log Today</th>
+                    {% if day.exercises and day.exercises|selectattr('video_query', 'defined')|list %}
+                    <th>Video</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for ex in day.exercises %}
+                <tr>
+                    <td class="exercise-name" data-label="Exercise">{{ ex.name }}</td>
+                    <td data-label="Sets x Reps">{{ ex.sets_reps or "-" }}</td>
+                    <td data-label="Rest">{{ ex.rest or "-" }}</td>
+                    <td data-label="Form Focus">{{ ex.form_focus or "" }}</td>
+                    <td data-label="Last Logged">
+                        {% if ex.last_log %}
+                        <span class="last-log-value">{% if ex.last_log.weight_kg is not none %}{{ ex.last_log.weight_kg }}kg{% else %}-{% endif %}{% if ex.last_log.reps is not none %} &times; {{ ex.last_log.reps }}{% endif %}</span>
+                        <span class="last-log-date">{{ ex.last_log.log_date }}</span>
+                        {% if ex.suggestion %}<span class="progressive-suggestion">📈 {{ ex.suggestion }}</span>{% endif %}
+                        {% else %}
+                        <span class="muted">Not logged yet</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Log Today">
+                        <form method="post" action="{{ url_for('member.log_exercise') }}" class="exercise-log-form">
+                            <input type="hidden" name="exercise_name" value="{{ ex.name }}">
+                            <input type="hidden" name="redirect_to" value="{{ _redirect_to }}">
+                            <input type="number" step="any" name="weight_kg" placeholder="kg" class="exercise-log-input" aria-label="Weight for {{ ex.name }} (kg)">
+                            <input type="number" step="1" name="reps" placeholder="reps" class="exercise-log-input exercise-log-input-sm" aria-label="Reps for {{ ex.name }}">
+                            <button type="submit" class="btn btn-sm">Log</button>
+                        </form>
+                    </td>
+                    {% if ex.video_query %}
+                    <td data-label="Video"><a href="{{ ex.video_query|youtube_search_url }}" target="_blank" rel="noopener" class="btn btn-sm">View</a></td>
+                    {% elif day.exercises|selectattr('video_query', 'defined')|list %}
+                    <td data-label="Video">-</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</details>
+{% endfor %}

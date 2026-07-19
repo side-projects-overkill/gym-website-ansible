@@ -2,7 +2,7 @@ import csv
 import io
 import os
 import re
-from datetime import date
+from datetime import date, timedelta
 
 from flask import (
     Blueprint,
@@ -15,7 +15,16 @@ from flask import (
     url_for,
 )
 
-from . import auth, db, food_config, paths, progress as progress_module, workout_config
+from . import (
+    auth,
+    db,
+    food_config,
+    paths,
+    progress as progress_module,
+    progressive_load,
+    quotes,
+    workout_config,
+)
 
 bp = Blueprint("member", __name__)
 
@@ -47,6 +56,34 @@ def logout():
 
 
 PRIMARY_WEIGHT_METRIC = "weight_kg"
+PRIMARY_HEIGHT_METRIC = "height_cm"
+
+
+def _compute_bmi(latest):
+    """Auto-calculate BMI from the latest logged weight + height, if both
+    are available. Returns None otherwise so the template can show an
+    empty state instead of a bogus number."""
+    weight = next(
+        (row["value"] for row in latest if row["metric_key"] == PRIMARY_WEIGHT_METRIC and row["value"] is not None),
+        None,
+    )
+    height_cm = next(
+        (row["value"] for row in latest if row["metric_key"] == PRIMARY_HEIGHT_METRIC and row["value"] is not None),
+        None,
+    )
+    if not weight or not height_cm:
+        return None
+
+    bmi = weight / ((height_cm / 100) ** 2)
+    if bmi < 18.5:
+        category = "Underweight"
+    elif bmi < 25:
+        category = "Normal"
+    elif bmi < 30:
+        category = "Overweight"
+    else:
+        category = "Obese"
+    return {"value": round(bmi, 1), "category": category}
 
 
 @bp.route("/dashboard")
@@ -61,12 +98,40 @@ def dashboard():
         (row for row in db.list_metric_defs(user_id) if row["metric_key"] == PRIMARY_WEIGHT_METRIC),
         None,
     )
+    bmi = _compute_bmi(latest)
 
     today_iso = date.today().isoformat()
-    checked_in_today = any(
-        row["visit_date"] == today_iso for row in db.list_recent_visits(user_id, limit=1)
-    )
+    recent_visits = db.list_recent_visits(user_id, limit=60)
+    recent_walks = db.list_recent_walks(user_id, limit=60)
+    checked_in_today = any(row["visit_date"] == today_iso for row in recent_visits)
+    walked_today = any(row["walk_date"] == today_iso for row in recent_walks)
     progress_result = progress_module.compute_progress(user_id)
+
+    weekly_activity = _compute_weekly_activity(recent_visits, recent_walks)
+    health_score, health_label = _health_score(progress_result["status"])
+    weight_goal = _compute_weight_goal(current_user, latest, user_id)
+    distance_month_km, walks_this_month = _distance_this_month(recent_walks)
+    weekly_goal_pct = _weekly_goal_pct(progress_result["attendance_signal"])
+    health_insights = _compute_health_insights(latest)
+    daily_quote = quotes.get_daily_quote()
+
+    food_of_day = None
+    if os.path.exists(paths.user_foods_path(user_id)):
+        paths.ensure_user_files(user_id)
+        food_cfg = food_config.load_config(paths.user_foods_path(user_id))
+        food_of_day = _pick_food_of_day(food_cfg)
+
+    plan_days = []
+    today_index = None
+    todays_workout = None
+    if config_exists:
+        paths.ensure_user_files(user_id)
+        plan_config = workout_config.load_config(paths.user_config_path(user_id))
+        plan_days = plan_config["days"]
+        today_index = workout_config.pick_today_index(plan_days)
+        progressive_load.annotate_days(plan_days, user_id, db)
+        if today_index is not None:
+            todays_workout = plan_days[today_index]
 
     return render_template(
         "member/dashboard.html",
@@ -74,10 +139,193 @@ def dashboard():
         config_exists=config_exists,
         weight_metric=PRIMARY_WEIGHT_METRIC,
         weight_def=weight_def,
+        bmi=bmi,
         today=today_iso,
         progress_result=progress_result,
         checked_in_today=checked_in_today,
+        walked_today=walked_today,
+        days=plan_days,
+        today_index=today_index,
+        todays_workout=todays_workout,
+        weekly_activity=weekly_activity,
+        health_score=health_score,
+        health_label=health_label,
+        weight_goal=weight_goal,
+        distance_month_km=distance_month_km,
+        walks_this_month=walks_this_month,
+        weekly_goal_pct=weekly_goal_pct,
+        health_insights=health_insights,
+        daily_quote=daily_quote,
+        food_of_day=food_of_day,
     )
+
+
+# ---- dashboard "bento grid" widget helpers ---------------------------------
+
+_HEALTH_SCORE_BY_STATUS = {
+    "on_track": (88, "Great"),
+    "mixed": (62, "Good"),
+    "off_track": (35, "Needs Focus"),
+    "insufficient_data": (50, "Getting Started"),
+}
+
+
+def _health_score(status):
+    return _HEALTH_SCORE_BY_STATUS.get(status, (50, "Getting Started"))
+
+
+def _weekly_goal_pct(attendance_signal):
+    goal = attendance_signal.get("goal_weekly_visits") or 0
+    visits = attendance_signal.get("visits_this_week") or 0
+    if goal <= 0:
+        return 0
+    return min(100, round(visits / goal * 100))
+
+
+def _compute_weekly_activity(recent_visits, recent_walks):
+    """Builds the data for the dashboard's "Activity" bar chart: one bar per
+    of the last 7 days (gym visit + walk both count), plus a %-change badge
+    versus the 7 days before that - mirrors a typical fitness-app activity
+    widget without needing any extra DB queries beyond what the dashboard
+    already fetches for the check-in buttons."""
+    visit_dates = {row["visit_date"] for row in recent_visits}
+    walk_dates = {row["walk_date"] for row in recent_walks}
+
+    def _score(iso_date):
+        return (1 if iso_date in visit_dates else 0) + (1 if iso_date in walk_dates else 0)
+
+    days = []
+    for offset in range(6, -1, -1):
+        d = date.today() - timedelta(days=offset)
+        days.append({"label": d.strftime("%a"), "score": _score(d.isoformat()), "is_today": offset == 0})
+
+    max_score = max((d["score"] for d in days), default=0) or 1
+    for d in days:
+        d["height_pct"] = max(6, round(d["score"] / max_score * 100)) if d["score"] else 0
+
+    this_week_total = sum(d["score"] for d in days)
+    prev_week_total = sum(
+        _score((date.today() - timedelta(days=offset)).isoformat()) for offset in range(13, 6, -1)
+    )
+    if prev_week_total > 0:
+        trend_pct = round((this_week_total - prev_week_total) / prev_week_total * 100)
+    else:
+        trend_pct = 100 if this_week_total > 0 else 0
+
+    return {"days": days, "trend_pct": trend_pct, "this_week_total": this_week_total}
+
+
+def _compute_weight_goal(user, latest, user_id):
+    current_weight = next(
+        (row["value"] for row in latest if row["metric_key"] == PRIMARY_WEIGHT_METRIC and row["value"] is not None),
+        None,
+    )
+    entries_logged = len(db.metric_history(user_id, PRIMARY_WEIGHT_METRIC, limit=100000))
+    return {
+        "current_weight": current_weight,
+        "goal_target_weight": user["goal_target_weight"],
+        "entries_logged": entries_logged,
+    }
+
+
+def _compute_health_insights(latest):
+    """Derives a few extra "for what it's worth" health indicators from
+    whatever body metrics the user already has logged. Every indicator is
+    independently optional - each only appears once its inputs exist - and
+    these are general population guidelines, not medical advice, which the
+    dashboard card says explicitly."""
+    values = {
+        row["metric_key"]: row["value"]
+        for row in latest
+        if row["value"] is not None
+    }
+    weight = values.get(PRIMARY_WEIGHT_METRIC)
+    height_cm = values.get(PRIMARY_HEIGHT_METRIC)
+    waist_cm = values.get("waist_cm")
+    body_fat_pct = values.get("body_fat_pct")
+
+    insights = []
+
+    if height_cm:
+        height_m = height_cm / 100
+        low = round(18.5 * height_m * height_m, 1)
+        high = round(24.9 * height_m * height_m, 1)
+        insights.append({
+            "label": "Healthy Weight Range",
+            "value": f"{low}-{high} kg",
+            "note": "based on a normal BMI (18.5-24.9) for your height",
+        })
+
+    if waist_cm and height_cm:
+        ratio = round(waist_cm / height_cm, 2)
+        if ratio < 0.5:
+            category, tone = "Healthy", ""
+        elif ratio < 0.6:
+            category, tone = "Elevated Risk", "is-warning"
+        else:
+            category, tone = "High Risk", "is-danger"
+        insights.append({
+            "label": "Waist-to-Height Ratio",
+            "value": str(ratio),
+            "category": category,
+            "tone": tone,
+            "note": "keeping this under 0.5 is linked to lower cardiometabolic risk",
+        })
+
+    if body_fat_pct is not None:
+        if body_fat_pct < 14:
+            category, tone = "Athletic", ""
+        elif body_fat_pct < 24:
+            category, tone = "Fitness", ""
+        elif body_fat_pct < 32:
+            category, tone = "Average", "is-warning"
+        else:
+            category, tone = "Above Average", "is-danger"
+        insights.append({
+            "label": "Body Fat",
+            "value": f"{body_fat_pct}%",
+            "category": category,
+            "tone": tone,
+            "note": "rough unisex banding - trends over time matter more than the exact number",
+        })
+
+    if weight and height_cm and waist_cm is None and body_fat_pct is None:
+        # Nudge people who've only ever logged weight/height toward the
+        # metrics that unlock the rest of this card.
+        insights.append({
+            "label": "Unlock More Insights",
+            "value": "Log your waist & body fat",
+            "note": "adds waist-to-height ratio and a body-fat estimate here",
+        })
+
+    return insights
+
+
+def _pick_food_of_day(food_cfg):
+    """Deterministically rotates through every food in the user's own food
+    guide, one per day (same idea as workout_config.pick_today_index) -
+    no extra state, and it's stable all day so it doesn't shuffle on every
+    dashboard reload. Returns None if the guide has no foods yet."""
+    all_foods = [
+        {"category": cat["name"], **food}
+        for cat in food_cfg.get("categories", [])
+        for food in cat.get("foods", [])
+    ]
+    if not all_foods:
+        return None
+    return all_foods[date.today().toordinal() % len(all_foods)]
+
+
+def _distance_this_month(recent_walks):
+    month_prefix = date.today().strftime("%Y-%m")
+    total = 0.0
+    count = 0
+    for row in recent_walks:
+        if row["walk_date"].startswith(month_prefix):
+            count += 1
+            if row["distance_km"] is not None:
+                total += row["distance_km"]
+    return round(total, 1), count
 
 
 # ---- workout plan / config editor -----------------------------------------
@@ -89,7 +337,54 @@ def plan():
     user_id = current_user["id"]
     paths.ensure_user_files(user_id)
     config = workout_config.load_config(paths.user_config_path(user_id))
-    return render_template("member/plan.html", site=config["site"], days=config["days"])
+    today_index = workout_config.pick_today_index(config["days"])
+    progressive_load.annotate_days(config["days"], user_id, db)
+    return render_template(
+        "member/plan.html",
+        site=config["site"],
+        days=config["days"],
+        today_index=today_index,
+        today=date.today().isoformat(),
+    )
+
+
+@bp.route("/plan/log-exercise", methods=["POST"])
+@auth.login_required
+def log_exercise():
+    current_user = auth.current_user()
+    user_id = current_user["id"]
+    exercise_name = request.form.get("exercise_name", "").strip()
+    raw_weight = request.form.get("weight_kg", "").strip()
+    raw_reps = request.form.get("reps", "").strip()
+    raw_sets = request.form.get("sets", "").strip()
+    redirect_to = request.form.get("redirect_to", "plan")
+
+    target = "member.dashboard" if redirect_to == "dashboard" else "member.plan"
+    anchor = "#todays-workout" if redirect_to == "dashboard" else ""
+
+    if not exercise_name:
+        flash("Missing exercise name.", "error")
+        return redirect(url_for(target) + anchor)
+
+    weight_kg = None
+    reps = None
+    sets = None
+    try:
+        if raw_weight:
+            weight_kg = float(raw_weight)
+        if raw_reps:
+            reps = int(raw_reps)
+        if raw_sets:
+            sets = int(raw_sets)
+    except ValueError:
+        flash("Weight must be a number and reps/sets must be whole numbers.", "error")
+        return redirect(url_for(target) + anchor)
+
+    db.log_exercise(
+        user_id, date.today().isoformat(), exercise_name, weight_kg, reps, sets
+    )
+    flash(f"Logged {exercise_name}. Nice work!", "success")
+    return redirect(url_for(target) + anchor)
 
 
 @bp.route("/plan/edit", methods=["GET", "POST"])
