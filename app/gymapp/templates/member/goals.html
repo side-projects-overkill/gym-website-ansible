@@ -4,43 +4,56 @@
 <h1>Goals</h1>
 <p class="subtitle">Set your target so progress tracking knows what to aim for.</p>
 
-{% if current_weight %}
-<div class="card-grid">
-    <div class="stat-card">
-        <div class="label">Current Weight</div>
-        <div class="value">{{ current_weight.value }} <small>{{ current_weight.unit }}</small></div>
-        <div class="date">as of {{ current_weight.log_date }}</div>
+<div class="two-col-grid">
+    {% if current_weight %}
+    <div class="card">
+        <div class="card-header">
+            <div class="icon-chip">⚖️</div>
+            <h2 style="margin:0;">Current Weight</h2>
+        </div>
+        <div style="font-size:1.9rem; font-weight:800; color:var(--text-main);">{{ current_weight.value }} <small style="font-size:1rem; font-weight:600; color:var(--text-muted);">{{ current_weight.unit }}</small></div>
+        <p class="muted" style="margin:6px 0 0;">as of {{ current_weight.log_date }}</p>
     </div>
-</div>
-{% endif %}
+    {% endif %}
 
-<div class="card" style="max-width:480px;">
-    <div class="card-header">
-        <div class="icon-chip">🎯</div>
-        <h2 style="margin:0;">Your Goal</h2>
+    <div class="card">
+        <div class="card-header">
+            <div class="icon-chip">🎯</div>
+            <h2 style="margin:0;">Your Goal</h2>
+        </div>
+        <form method="post" action="{{ url_for('goals.goals') }}">
+            <div class="form-row">
+                <div>
+                    <label for="goal_type">Goal type</label>
+                    <select id="goal_type" name="goal_type" required>
+                        {% for value in allowed_goal_types %}
+                        <option value="{{ value }}" {% if user.goal_type == value %}selected{% endif %}>{{ value|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="goal_target_weight">Target weight (kg, optional)</label>
+                    <input type="number" step="any" min="0" id="goal_target_weight" name="goal_target_weight"
+                           value="{{ user.goal_target_weight if user.goal_target_weight is not none else '' }}"
+                           placeholder="e.g. 75.0">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label for="goal_weekly_visits">Weekly gym visit goal</label>
+                    <input type="number" step="1" min="1" id="goal_weekly_visits" name="goal_weekly_visits"
+                           value="{{ user.goal_weekly_visits }}" required>
+                </div>
+                <div>
+                    <label for="goal_weekly_walks">Weekly walk goal</label>
+                    <input type="number" step="1" min="1" id="goal_weekly_walks" name="goal_weekly_walks"
+                           value="{{ user.goal_weekly_walks }}" required>
+                </div>
+            </div>
+
+            <button class="btn" type="submit">Save Goals</button>
+        </form>
     </div>
-    <form method="post" action="{{ url_for('goals.goals') }}">
-        <label for="goal_type">Goal type</label>
-        <select id="goal_type" name="goal_type" required>
-            {% for value in allowed_goal_types %}
-            <option value="{{ value }}" {% if user.goal_type == value %}selected{% endif %}>{{ value|capitalize }}</option>
-            {% endfor %}
-        </select>
-
-        <label for="goal_target_weight">Target weight (kg, optional)</label>
-        <input type="number" step="any" min="0" id="goal_target_weight" name="goal_target_weight"
-               value="{{ user.goal_target_weight if user.goal_target_weight is not none else '' }}"
-               placeholder="e.g. 75.0">
-
-        <label for="goal_weekly_visits">Weekly gym visit goal</label>
-        <input type="number" step="1" min="1" id="goal_weekly_visits" name="goal_weekly_visits"
-               value="{{ user.goal_weekly_visits }}" required>
-
-        <label for="goal_weekly_walks">Weekly walk goal</label>
-        <input type="number" step="1" min="1" id="goal_weekly_walks" name="goal_weekly_walks"
-               value="{{ user.goal_weekly_walks }}" required>
-
-        <button class="btn" type="submit">Save Goals</button>
-    </form>
 </div>
 {% endblock %}

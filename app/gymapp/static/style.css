@@ -100,14 +100,15 @@ a:hover { text-decoration: underline; }
 .topnav-inner {
     max-width: 1000px;
     margin: 0 auto;
-    padding: 12px 16px;
+    padding: 14px 16px 12px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 16px;
+    gap: 10px 16px;
 }
 .topnav .brand {
     font-weight: 800;
+    font-size: 1.05rem;
     text-decoration: none;
     margin-right: auto;
     background-image: var(--accent-gradient);
@@ -118,17 +119,34 @@ a:hover { text-decoration: underline; }
     transition: filter 0.15s ease;
 }
 .topnav .brand:hover { filter: brightness(1.25); }
-.topnav-links { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* Two tiers: frequently-used tracking pages up top, config/account links
+   below in a quieter style so the primary nav doesn't feel like one big
+   wall of equally-weighted links. */
+.topnav-links { display: flex; flex-direction: column; flex-basis: 100%; gap: 8px; }
+.topnav-links-primary, .topnav-links-secondary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+.topnav-links-secondary {
+    padding-top: 8px;
+    border-top: 1px solid var(--border-light);
+}
 .topnav-links a {
     color: var(--text-muted);
     font-size: 0.9rem;
-    padding: 6px 10px;
+    padding: 7px 12px;
     border-radius: 8px;
     font-weight: 500;
     transition: color 0.15s ease, background-color 0.15s ease;
 }
 .topnav-links a:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.05); text-decoration: none; }
-.topnav-links a.active { color: var(--text-main); background: rgba(91, 124, 255, 0.14); }
+.topnav-links a.active { color: var(--text-main); background: rgba(91, 124, 255, 0.14); font-weight: 600; }
+.topnav-links-secondary a { font-size: 0.82rem; color: var(--text-dim); }
+.topnav-links-secondary a:hover, .topnav-links-secondary a.active { color: var(--text-main); }
+.topnav-divider { width: 1px; height: 14px; background: var(--border); margin: 0 2px; }
 
 .nav-toggle {
     display: none;
@@ -156,7 +174,7 @@ a:hover { text-decoration: underline; }
 /* Headings */
 h1 { font-size: 1.9rem; margin-bottom: 8px; color: var(--text-main); font-weight: 800; letter-spacing: -0.01em; }
 h2 { font-size: 1.25rem; margin: 24px 0 12px; color: var(--text-main); font-weight: 700; }
-p.subtitle { color: var(--text-muted); text-align: center; margin-bottom: 24px; }
+p.subtitle { color: var(--text-muted); margin-bottom: 24px; }
 
 /* Cards */
 .card {
@@ -361,6 +379,7 @@ textarea { font-family: "SF Mono", Consolas, Monaco, "Liberation Mono", monospac
 
 /* Login */
 .login-wrap { max-width: 380px; margin: 60px auto; }
+.login-wrap p.subtitle { text-align: center; }
 .login-wrap .card { box-shadow: 0 0 70px rgba(91, 124, 255, 0.18), var(--shadow-glow); }
 
 /* Footer */
@@ -675,7 +694,6 @@ canvas.chart { display: block; width: 100%; max-width: 100%; background: var(--c
 
     .topnav-links {
         display: none;
-        flex-direction: column;
         width: 100%;
         gap: 0;
         padding-top: 6px;
@@ -683,10 +701,13 @@ canvas.chart { display: block; width: 100%; max-width: 100%; background: var(--c
         margin-top: 6px;
     }
     .topnav-links.open { display: flex; }
+    .topnav-links-primary, .topnav-links-secondary { flex-direction: column; align-items: stretch; gap: 0; }
+    .topnav-links-secondary { margin-top: 8px; padding-top: 10px; }
     .topnav-links a {
         padding: 12px 4px;
         border-bottom: 1px solid var(--border-light);
     }
+    .topnav-divider { display: none; }
 
     .container { padding: 12px; }
 

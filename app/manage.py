@@ -85,6 +85,10 @@ def cmd_create_user(args):
             print(f"Username '{args.username}' already exists.", file=sys.stderr)
             return 1
         user_id = db.create_migrated_user(args.username, hash_password(args.password))
+        # Mirrors registration.py's normal Telegram signup flow, which seeds
+        # these on activation - this CLI path bypasses that flow entirely,
+        # so without this the account would start with zero metric types.
+        db.seed_default_metrics(user_id)
         print(f"Created user '{args.username}' -> user_id={user_id}")
     return 0
 

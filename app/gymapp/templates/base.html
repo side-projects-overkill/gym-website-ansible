@@ -18,21 +18,28 @@
             <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navLinks">☰</button>
             <div class="topnav-links" id="navLinks">
                 {% if session.get('user_id') %}
-                <a href="{{ url_for('member.dashboard') }}" class="{{ 'active' if request.endpoint == 'member.dashboard' }}">Dashboard</a>
-                <a href="{{ url_for('member.plan') }}" class="{{ 'active' if request.endpoint == 'member.plan' }}">Workout Plan</a>
-                <a href="{{ url_for('member.config_editor') }}" class="{{ 'active' if request.endpoint == 'member.config_editor' }}">Workout Config</a>
-                <a href="{{ url_for('member.tracker') }}" class="{{ 'active' if request.endpoint == 'member.tracker' }}">Tracker</a>
-                <a href="{{ url_for('member.food_guide') }}" class="{{ 'active' if request.endpoint == 'member.food_guide' }}">Food Guide</a>
-                <a href="{{ url_for('member.foods_editor') }}" class="{{ 'active' if request.endpoint == 'member.foods_editor' }}">Foods Config</a>
-                <a href="{{ url_for('member.metrics') }}" class="{{ 'active' if request.endpoint == 'member.metrics' }}">Metrics</a>
-                <a href="{{ url_for('attendance.attendance') }}" class="{{ 'active' if request.endpoint == 'attendance.attendance' }}">Attendance</a>
-                <a href="{{ url_for('walking.walking') }}" class="{{ 'active' if request.endpoint == 'walking.walking' }}">Walking</a>
-                <a href="{{ url_for('goals.goals') }}" class="{{ 'active' if request.endpoint == 'goals.goals' }}">Goals</a>
-                <a href="{{ url_for('member.change_password') }}" class="{{ 'active' if request.endpoint == 'member.change_password' }}">Account</a>
-                <a href="{{ url_for('member.logout') }}">Logout</a>
+                <div class="topnav-links-primary">
+                    <a href="{{ url_for('member.dashboard') }}" class="{{ 'active' if request.endpoint == 'member.dashboard' }}">Dashboard</a>
+                    <a href="{{ url_for('member.plan') }}" class="{{ 'active' if request.endpoint == 'member.plan' }}">Workout Plan</a>
+                    <a href="{{ url_for('member.tracker') }}" class="{{ 'active' if request.endpoint == 'member.tracker' }}">Tracker</a>
+                    <a href="{{ url_for('member.food_guide') }}" class="{{ 'active' if request.endpoint == 'member.food_guide' }}">Food Guide</a>
+                    <a href="{{ url_for('attendance.attendance') }}" class="{{ 'active' if request.endpoint == 'attendance.attendance' }}">Attendance</a>
+                    <a href="{{ url_for('walking.walking') }}" class="{{ 'active' if request.endpoint == 'walking.walking' }}">Walking</a>
+                    <a href="{{ url_for('goals.goals') }}" class="{{ 'active' if request.endpoint == 'goals.goals' }}">Goals</a>
+                </div>
+                <div class="topnav-links-secondary">
+                    <a href="{{ url_for('member.config_editor') }}" class="{{ 'active' if request.endpoint == 'member.config_editor' }}">Workout Config</a>
+                    <a href="{{ url_for('member.foods_editor') }}" class="{{ 'active' if request.endpoint == 'member.foods_editor' }}">Foods Config</a>
+                    <a href="{{ url_for('member.metrics') }}" class="{{ 'active' if request.endpoint == 'member.metrics' }}">Metrics</a>
+                    <span class="topnav-divider" aria-hidden="true"></span>
+                    <a href="{{ url_for('member.change_password') }}" class="{{ 'active' if request.endpoint == 'member.change_password' }}">Account</a>
+                    <a href="{{ url_for('member.logout') }}">Logout</a>
+                </div>
                 {% else %}
-                <a href="{{ url_for('member.login') }}" class="{{ 'active' if request.endpoint == 'member.login' }}">Login</a>
-                <a href="{{ url_for('registration.register') }}" class="{{ 'active' if request.endpoint == 'registration.register' }}">Register</a>
+                <div class="topnav-links-primary">
+                    <a href="{{ url_for('member.login') }}" class="{{ 'active' if request.endpoint == 'member.login' }}">Login</a>
+                    <a href="{{ url_for('registration.register') }}" class="{{ 'active' if request.endpoint == 'registration.register' }}">Register</a>
+                </div>
                 {% endif %}
             </div>
         </div>
