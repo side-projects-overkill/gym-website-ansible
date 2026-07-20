@@ -8,7 +8,7 @@ from datetime import date, timedelta
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from . import auth, db
+from . import auth, db, localtime
 
 bp = Blueprint("attendance", __name__)
 
@@ -29,13 +29,14 @@ def _redirect_target():
 def attendance():
     current_user = auth.current_user()
     user_id = current_user["id"]
-    today = date.today().isoformat()
+    today_date = localtime.today()
+    today = today_date.isoformat()
 
     recent_visits = db.list_recent_visits(user_id, limit=60)
     checked_in_today = any(row["visit_date"] == today for row in recent_visits)
 
-    since_7d = (date.today() - timedelta(days=6)).isoformat()
-    since_30d = (date.today() - timedelta(days=29)).isoformat()
+    since_7d = (today_date - timedelta(days=6)).isoformat()
+    since_30d = (today_date - timedelta(days=29)).isoformat()
 
     stats = {
         "total": db.total_visit_count(user_id),
@@ -57,7 +58,7 @@ def attendance():
 def checkin():
     current_user = auth.current_user()
     user_id = current_user["id"]
-    today = date.today().isoformat()
+    today = localtime.today().isoformat()
 
     if db.checkin_visit(user_id, today):
         flash("Checked in for today. Nice work!", "success")
@@ -81,7 +82,7 @@ def add():
         flash("Please provide a valid date.", "error")
         return redirect(url_for(_redirect_target()))
 
-    if visit_date > date.today().isoformat():
+    if visit_date > localtime.today().isoformat():
         flash("Visit date can't be in the future.", "error")
         return redirect(url_for(_redirect_target()))
 

@@ -2,7 +2,7 @@ import csv
 import io
 import os
 import re
-from datetime import date, timedelta
+from datetime import timedelta
 
 from flask import (
     Blueprint,
@@ -19,6 +19,7 @@ from . import (
     auth,
     db,
     food_config,
+    localtime,
     paths,
     progress as progress_module,
     progressive_load,
@@ -100,7 +101,7 @@ def dashboard():
     )
     bmi = _compute_bmi(latest)
 
-    today_iso = date.today().isoformat()
+    today_iso = localtime.today().isoformat()
     recent_visits = db.list_recent_visits(user_id, limit=60)
     recent_walks = db.list_recent_walks(user_id, limit=60)
     checked_in_today = any(row["visit_date"] == today_iso for row in recent_visits)
@@ -194,9 +195,10 @@ def _compute_weekly_activity(recent_visits, recent_walks):
     def _score(iso_date):
         return (1 if iso_date in visit_dates else 0) + (1 if iso_date in walk_dates else 0)
 
+    today = localtime.today()
     days = []
     for offset in range(6, -1, -1):
-        d = date.today() - timedelta(days=offset)
+        d = today - timedelta(days=offset)
         days.append({"label": d.strftime("%a"), "score": _score(d.isoformat()), "is_today": offset == 0})
 
     max_score = max((d["score"] for d in days), default=0) or 1
@@ -205,7 +207,7 @@ def _compute_weekly_activity(recent_visits, recent_walks):
 
     this_week_total = sum(d["score"] for d in days)
     prev_week_total = sum(
-        _score((date.today() - timedelta(days=offset)).isoformat()) for offset in range(13, 6, -1)
+        _score((today - timedelta(days=offset)).isoformat()) for offset in range(13, 6, -1)
     )
     if prev_week_total > 0:
         trend_pct = round((this_week_total - prev_week_total) / prev_week_total * 100)
@@ -313,11 +315,11 @@ def _pick_food_of_day(food_cfg):
     ]
     if not all_foods:
         return None
-    return all_foods[date.today().toordinal() % len(all_foods)]
+    return all_foods[localtime.today().toordinal() % len(all_foods)]
 
 
 def _distance_this_month(recent_walks):
-    month_prefix = date.today().strftime("%Y-%m")
+    month_prefix = localtime.today().strftime("%Y-%m")
     total = 0.0
     count = 0
     for row in recent_walks:
@@ -344,7 +346,7 @@ def plan():
         site=config["site"],
         days=config["days"],
         today_index=today_index,
-        today=date.today().isoformat(),
+        today=localtime.today().isoformat(),
     )
 
 
@@ -381,7 +383,7 @@ def log_exercise():
         return redirect(url_for(target) + anchor)
 
     db.log_exercise(
-        user_id, date.today().isoformat(), exercise_name, weight_kg, reps, sets
+        user_id, localtime.today().isoformat(), exercise_name, weight_kg, reps, sets
     )
     flash(f"Logged {exercise_name}. Nice work!", "success")
     return redirect(url_for(target) + anchor)
@@ -544,7 +546,7 @@ def tracker():
     metric_filter = request.args.get("metric") or None
     logs = db.list_logs(user_id, metric_key=metric_filter)
     defs = db.list_metric_defs(user_id)
-    today = date.today().isoformat()
+    today = localtime.today().isoformat()
     return render_template(
         "member/tracker.html",
         logs=logs,
@@ -559,7 +561,7 @@ def tracker():
 def tracker_add():
     current_user = auth.current_user()
     user_id = current_user["id"]
-    log_date = request.form.get("log_date") or date.today().isoformat()
+    log_date = request.form.get("log_date") or localtime.today().isoformat()
     metric_key = request.form.get("metric_key", "")
     notes = request.form.get("notes", "").strip()
     raw_value = request.form.get("value", "").strip()

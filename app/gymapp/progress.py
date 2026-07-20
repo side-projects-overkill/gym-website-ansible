@@ -10,9 +10,9 @@ and called by dashboard code (or anything else) once wired up:
 This is a heuristic feature, not a medical/scientific tool - it should
 never raise, and always returns a well-formed dict (see `_fallback`).
 """
-from datetime import date, timedelta
+from datetime import timedelta
 
-from . import db
+from . import db, localtime
 
 WEIGHT_METRIC_KEY = "weight_kg"
 
@@ -41,7 +41,7 @@ def _fallback():
 
 def _attendance_signal(user_id, user):
     goal_weekly_visits = user["goal_weekly_visits"] or 0
-    since = (date.today() - timedelta(days=ATTENDANCE_WINDOW_DAYS - 1)).isoformat()
+    since = (localtime.today() - timedelta(days=ATTENDANCE_WINDOW_DAYS - 1)).isoformat()
     visits_this_week = db.count_visits_since(user_id, since)
 
     if db.total_visit_count(user_id) == 0:
@@ -95,7 +95,7 @@ def _pick_weight_baseline(rows):
     """`rows` is ascending by log_date. Pick the oldest point within the
     last WEIGHT_BASELINE_MAX_AGE_DAYS days as the comparison baseline; if
     none exists that recent, fall back to the very first historical point."""
-    cutoff = (date.today() - timedelta(days=WEIGHT_BASELINE_MAX_AGE_DAYS)).isoformat()
+    cutoff = (localtime.today() - timedelta(days=WEIGHT_BASELINE_MAX_AGE_DAYS)).isoformat()
     for row in rows:
         if row["log_date"] >= cutoff:
             return row

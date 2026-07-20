@@ -403,7 +403,7 @@ textarea { font-family: "SF Mono", Consolas, Monaco, "Liberation Mono", monospac
 /* Accordion variant of the day/title pattern above - used for the workout
    plan, where "today's" day should be open on load and the rest collapsed.
    Native <details>/<summary> gives us that behavior with zero JS. */
-.day-accordion { margin-bottom: 14px; border-radius: 16px; }
+.day-accordion { margin-bottom: 18px; border-radius: 16px; }
 .day-accordion summary { list-style: none; cursor: pointer; }
 .day-accordion summary::-webkit-details-marker { display: none; }
 .day-accordion .day-title {
@@ -429,6 +429,15 @@ textarea { font-family: "SF Mono", Consolas, Monaco, "Liberation Mono", monospac
     border-radius: 999px;
 }
 .day-accordion table { border-radius: 0 0 14px 14px; }
+
+/* The exercise rows pack more into each cell (a stacked last-logged
+   value/date/suggestion, plus an inline quick-log form) than the base
+   table padding was designed for - give them a bit more room. */
+.day-accordion td, .day-accordion th { padding: 16px 14px; }
+.day-accordion td { vertical-align: middle; }
+.day-accordion .last-log-date { margin-top: 3px; }
+.day-accordion .progressive-suggestion { margin-top: 5px; }
+.day-accordion .exercise-log-form { gap: 8px; row-gap: 6px; }
 
 /* ---------------------------------------------------------------- */
 /* Dashboard "bento" overview grid                                   */
@@ -718,7 +727,7 @@ canvas.chart { display: block; width: 100%; max-width: 100%; background: var(--c
         width: 100%;
     }
     table.responsive-table tr {
-        margin-bottom: 12px;
+        margin-bottom: 14px;
         background: var(--card-bg-soft);
         border: 1px solid var(--border);
         border-radius: 14px;
@@ -726,7 +735,7 @@ canvas.chart { display: block; width: 100%; max-width: 100%; background: var(--c
     }
     table.responsive-table td {
         border-bottom: 1px solid var(--border-light);
-        padding: 8px 12px;
+        padding: 10px 14px;
     }
     table.responsive-table td:last-child { border-bottom: none; }
     table.responsive-table td::before {
@@ -737,12 +746,17 @@ canvas.chart { display: block; width: 100%; max-width: 100%; background: var(--c
         letter-spacing: 0.5px;
         color: var(--text-dim);
         font-weight: 600;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
     }
     table.responsive-table td:empty::before { content: none; }
 
     th, td { padding: 8px 6px; font-size: 0.8rem; }
     .btn { font-size: 0.75rem; }
+
+    /* The workout accordion's exercise cards need a touch more room than
+       plain data tables since each one stacks 4-6 labeled fields. */
+    .day-accordion table.responsive-table td { padding: 12px 14px; }
+    .day-accordion .exercise-log-form { flex-wrap: wrap; }
 }
 
 @media (max-width: 480px) {
@@ -785,6 +799,11 @@ canvas.chart { display: block; width: 100%; max-width: 100%; background: var(--c
 }
 .hero-actions {
     justify-content: center;
+}
+.hero-note {
+    margin: 16px 0 0;
+    color: var(--text-dim);
+    font-size: 0.82rem;
 }
 .btn-lg {
     padding: 13px 28px;

@@ -11,9 +11,10 @@ request per day per app worker, regardless of how many times the dashboard
 is loaded.
 """
 import logging
-from datetime import date as date_cls
 
 import requests
+
+from . import localtime
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ def _fallback_quote(today):
 def get_daily_quote(today=None):
     """Returns {"text": ..., "author": ...} for today, from cache/API/
     fallback in that order of preference."""
-    today = today or date_cls.today()
+    today = today or localtime.today()
     today_key = today.isoformat()
 
     if _cache["date"] == today_key and _cache["quote"] is not None:

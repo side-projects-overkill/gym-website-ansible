@@ -35,6 +35,10 @@ def create_app(data_dir=None):
         # Off by default so tests/local dev never spin up a thread that
         # makes real network calls; the systemd unit turns this on.
         ENABLE_TELEGRAM_POLLER=os.environ.get("GYMAPP_ENABLE_TELEGRAM_POLLER", "") == "1",
+        # Everything the app treats as "today" (workout-of-the-day, weekly
+        # charts, check-in dates, ...) is computed in this timezone rather
+        # than the server's own system clock - see gymapp/localtime.py.
+        APP_TIMEZONE=os.environ.get("GYMAPP_TIMEZONE", "Asia/Kolkata"),
     )
 
     db_module.init_db(app.config["DB_PATH"])

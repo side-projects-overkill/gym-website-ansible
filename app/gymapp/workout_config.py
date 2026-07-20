@@ -1,9 +1,7 @@
 """Load/save the YAML file that drives the public workout page."""
-from datetime import date
-
 import yaml
 
-from . import yaml_store
+from . import localtime, yaml_store
 from .yaml_store import ConfigError, load_raw  # re-exported for callers
 
 BACKUP_PREFIX = "gym"
@@ -66,4 +64,4 @@ def pick_today_index(days):
     """
     if not days:
         return None
-    return date.today().weekday() % len(days)
+    return localtime.today().weekday() % len(days)

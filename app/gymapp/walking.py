@@ -7,7 +7,7 @@ from datetime import date, timedelta
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from . import auth, db
+from . import auth, db, localtime
 
 bp = Blueprint("walking", __name__)
 
@@ -25,13 +25,14 @@ def _redirect_target():
 def walking():
     current_user = auth.current_user()
     user_id = current_user["id"]
-    today = date.today().isoformat()
+    today_date = localtime.today()
+    today = today_date.isoformat()
 
     recent_walks = db.list_recent_walks(user_id, limit=60)
     walked_today = any(row["walk_date"] == today for row in recent_walks)
 
-    since_7d = (date.today() - timedelta(days=6)).isoformat()
-    since_30d = (date.today() - timedelta(days=29)).isoformat()
+    since_7d = (today_date - timedelta(days=6)).isoformat()
+    since_30d = (today_date - timedelta(days=29)).isoformat()
 
     stats = {
         "total": db.total_walk_count(user_id),
@@ -54,7 +55,7 @@ def walking():
 def checkin():
     current_user = auth.current_user()
     user_id = current_user["id"]
-    today = date.today().isoformat()
+    today = localtime.today().isoformat()
 
     if db.checkin_walk(user_id, today):
         flash("Walk logged for today. Nice work!", "success")
@@ -80,7 +81,7 @@ def add():
         flash("Please provide a valid date.", "error")
         return redirect(url_for(_redirect_target()))
 
-    if walk_date > date.today().isoformat():
+    if walk_date > localtime.today().isoformat():
         flash("Walk date can't be in the future.", "error")
         return redirect(url_for(_redirect_target()))
 
