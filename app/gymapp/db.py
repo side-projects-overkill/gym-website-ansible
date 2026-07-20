@@ -659,12 +659,13 @@ def seed_default_metrics(user_id):
 
 def add_log(user_id, log_date, metric_key, value, notes=""):
     db = get_db()
-    db.execute(
+    cursor = db.execute(
         "INSERT INTO body_logs (log_date, metric_key, value, notes, created_at, user_id) "
         "VALUES (?, ?, ?, ?, ?, ?)",
         (log_date, metric_key, value, notes, now_iso(), user_id),
     )
     db.commit()
+    return cursor.lastrowid
 
 
 def delete_log(user_id, log_id):

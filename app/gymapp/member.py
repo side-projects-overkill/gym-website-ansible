@@ -7,6 +7,7 @@ from datetime import timedelta
 from flask import (
     Blueprint,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -30,6 +31,15 @@ from . import (
 bp = Blueprint("member", __name__)
 
 METRIC_KEY_RE = re.compile(r"^[a-z][a-z0-9_]{1,31}$")
+
+
+def _wants_json():
+    """The handful of frequently-used log/check-in forms submit via
+    background fetch() (see static/ajax-forms.js) instead of a normal page
+    POST, specifically so the page never reloads and the scroll position
+    never jumps - this is how those requests are told apart from a regular
+    browser form submission that still wants a redirect."""
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -359,14 +369,20 @@ def log_exercise():
     raw_weight = request.form.get("weight_kg", "").strip()
     raw_reps = request.form.get("reps", "").strip()
     raw_sets = request.form.get("sets", "").strip()
+    sets_reps_text = request.form.get("sets_reps", "")
     redirect_to = request.form.get("redirect_to", "plan")
 
     target = "member.dashboard" if redirect_to == "dashboard" else "member.plan"
     anchor = "#todays-workout" if redirect_to == "dashboard" else ""
 
-    if not exercise_name:
-        flash("Missing exercise name.", "error")
+    def _fail(message):
+        if _wants_json():
+            return jsonify({"ok": False, "message": message}), 400
+        flash(message, "error")
         return redirect(url_for(target) + anchor)
+
+    if not exercise_name:
+        return _fail("Missing exercise name.")
 
     weight_kg = None
     reps = None
@@ -379,12 +395,23 @@ def log_exercise():
         if raw_sets:
             sets = int(raw_sets)
     except ValueError:
-        flash("Weight must be a number and reps/sets must be whole numbers.", "error")
-        return redirect(url_for(target) + anchor)
+        return _fail("Weight must be a number and reps/sets must be whole numbers.")
 
-    db.log_exercise(
-        user_id, localtime.today().isoformat(), exercise_name, weight_kg, reps, sets
-    )
+    log_date = localtime.today().isoformat()
+    db.log_exercise(user_id, log_date, exercise_name, weight_kg, reps, sets)
+
+    if _wants_json():
+        last_log = {"weight_kg": weight_kg, "reps": reps, "log_date": log_date}
+        target_reps = progressive_load.parse_target_reps(sets_reps_text)
+        return jsonify(
+            {
+                "ok": True,
+                "message": f"Logged {exercise_name}. Nice work!",
+                "last_log": last_log,
+                "suggestion": progressive_load.suggest_next(last_log, target_reps),
+            }
+        )
+
     flash(f"Logged {exercise_name}. Nice work!", "success")
     return redirect(url_for(target) + anchor)
 
@@ -567,18 +594,42 @@ def tracker_add():
     raw_value = request.form.get("value", "").strip()
     return_to = "member.dashboard" if request.form.get("redirect_to") == "dashboard" else "member.tracker"
 
+    def _fail(message):
+        if _wants_json():
+            return jsonify({"ok": False, "message": message}), 400
+        flash(message, "error")
+        return redirect(url_for(return_to))
+
     try:
         value = float(raw_value)
     except ValueError:
-        flash("Value must be a number.", "error")
-        return redirect(url_for(return_to))
+        return _fail("Value must be a number.")
 
-    known_keys = {row["metric_key"] for row in db.list_metric_defs(user_id)}
-    if metric_key not in known_keys:
-        flash("Unknown metric.", "error")
-        return redirect(url_for(return_to))
+    metric_def = next(
+        (row for row in db.list_metric_defs(user_id) if row["metric_key"] == metric_key), None
+    )
+    if metric_def is None:
+        return _fail("Unknown metric.")
 
-    db.add_log(user_id, log_date, metric_key, value, notes)
+    log_id = db.add_log(user_id, log_date, metric_key, value, notes)
+
+    if _wants_json():
+        return jsonify(
+            {
+                "ok": True,
+                "message": "Entry logged.",
+                "log": {
+                    "id": log_id,
+                    "log_date": log_date,
+                    "metric_key": metric_key,
+                    "label": metric_def["label"],
+                    "unit": metric_def["unit"],
+                    "value": value,
+                    "notes": notes,
+                },
+            }
+        )
+
     flash("Entry logged.", "success")
     return redirect(url_for(return_to))
 

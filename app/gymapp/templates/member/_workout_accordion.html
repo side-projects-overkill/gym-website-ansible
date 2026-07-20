@@ -50,6 +50,7 @@
                     <td data-label="Log Today">
                         <form method="post" action="{{ url_for('member.log_exercise') }}" class="exercise-log-form">
                             <input type="hidden" name="exercise_name" value="{{ ex.name }}">
+                            <input type="hidden" name="sets_reps" value="{{ ex.sets_reps or '' }}">
                             <input type="hidden" name="redirect_to" value="{{ _redirect_to }}">
                             <input type="number" step="any" name="weight_kg" placeholder="kg" class="exercise-log-input" aria-label="Weight for {{ ex.name }} (kg)">
                             <input type="number" step="1" name="reps" placeholder="reps" class="exercise-log-input exercise-log-input-sm" aria-label="Reps for {{ ex.name }}">

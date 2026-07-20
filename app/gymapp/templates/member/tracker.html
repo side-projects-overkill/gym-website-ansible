@@ -9,7 +9,7 @@
         <div class="icon-chip">📝</div>
         <h2 style="margin:0;">Log a New Entry</h2>
     </div>
-    <form method="post" action="{{ url_for('member.tracker_add') }}">
+    <form method="post" action="{{ url_for('member.tracker_add') }}" id="trackerLogForm">
         <div class="form-row">
             <div>
                 <label for="log_date">Date</label>
@@ -82,7 +82,7 @@
             <thead>
                 <tr><th>Date</th><th>Metric</th><th>Value</th><th>Notes</th><th></th></tr>
             </thead>
-            <tbody>
+            <tbody id="historyTbody">
                 {% for row in logs %}
                 <tr>
                     <td data-label="Date">{{ row.log_date }}</td>
@@ -96,7 +96,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="muted">No entries yet.</td></tr>
+                <tr class="history-empty"><td colspan="5" class="muted">No entries yet.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -113,6 +113,11 @@ if (select && trendCanvas) {
     select.addEventListener('change', load);
     if (select.value) load();
     window.addEventListener('resize', load);
+    // Called from ajax-forms.js after a new entry is logged without a page
+    // reload, so the chart picks up the new point immediately.
+    window.reloadTrendChartIfMatches = (metricKey) => {
+        if (select.value === metricKey) load();
+    };
 }
 </script>
 {% endblock %}

@@ -15,7 +15,8 @@
         {% if checked_in_today %}
         <span class="btn btn-secondary quick-action-done">✅ Checked in today</span>
         {% else %}
-        <form method="post" action="{{ url_for('attendance.checkin') }}">
+        <form method="post" action="{{ url_for('attendance.checkin') }}" class="checkin-form"
+              data-done-html='<span class="btn btn-secondary quick-action-done">✅ Checked in today</span>'>
             <input type="hidden" name="redirect_to" value="dashboard">
             <button class="btn" type="submit">🏋️ Check In to Gym</button>
         </form>
@@ -24,7 +25,8 @@
         {% if walked_today %}
         <span class="btn btn-secondary quick-action-done">✅ Walked today</span>
         {% else %}
-        <form method="post" action="{{ url_for('walking.checkin') }}">
+        <form method="post" action="{{ url_for('walking.checkin') }}" class="checkin-form"
+              data-done-html='<span class="btn btn-secondary quick-action-done">✅ Walked today</span>'>
             <input type="hidden" name="redirect_to" value="dashboard">
             <button class="btn" type="submit">🚶 Check In a Walk</button>
         </form>

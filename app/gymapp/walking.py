@@ -5,7 +5,7 @@ Blueprint name "walking", no url_prefix.
 """
 from datetime import date, timedelta
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from . import auth, db, localtime
 
@@ -18,6 +18,12 @@ def _redirect_target():
     if request.form.get("redirect_to") == "dashboard":
         return "member.dashboard"
     return "walking.walking"
+
+
+def _wants_json():
+    """See member._wants_json - the quick check-in button submits via
+    background fetch() so the page never reloads."""
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
 
 @bp.route("/walking")
@@ -57,11 +63,13 @@ def checkin():
     user_id = current_user["id"]
     today = localtime.today().isoformat()
 
-    if db.checkin_walk(user_id, today):
-        flash("Walk logged for today. Nice work!", "success")
-    else:
-        flash("Already logged a walk today.", "error")
+    checked_in = db.checkin_walk(user_id, today)
+    message = "Walk logged for today. Nice work!" if checked_in else "Already logged a walk today."
 
+    if _wants_json():
+        return jsonify({"ok": checked_in, "message": message})
+
+    flash(message, "success" if checked_in else "error")
     return redirect(url_for(_redirect_target()))
 
 

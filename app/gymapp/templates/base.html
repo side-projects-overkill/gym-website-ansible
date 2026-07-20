@@ -65,5 +65,6 @@
 
         {% block content %}{% endblock %}
     </div>
+    <script src="{{ url_for('static', filename='ajax-forms.js') }}?v={{ asset_version }}"></script>
 </body>
 </html>

@@ -27,7 +27,8 @@
     {% if checked_in_today %}
     <p class="muted">You've already checked in today ({{ today }}). Nice work!</p>
     {% else %}
-    <form method="post" action="{{ url_for('attendance.checkin') }}">
+    <form method="post" action="{{ url_for('attendance.checkin') }}" class="checkin-form"
+          data-done-html="<p class=&quot;muted&quot;>You&#39;ve already checked in today ({{ today }}). Nice work!</p>">
         <button class="btn" type="submit">Check In for Today</button>
     </form>
     {% endif %}

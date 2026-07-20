@@ -6,7 +6,7 @@ integration contract (blueprint name "attendance", no url_prefix).
 """
 from datetime import date, timedelta
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from . import auth, db, localtime
 
@@ -22,6 +22,12 @@ def _redirect_target():
         # integration pass, so this only works once that's wired up.
         return "member.dashboard"
     return "attendance.attendance"
+
+
+def _wants_json():
+    """See member._wants_json - the quick check-in button submits via
+    background fetch() so the page never reloads."""
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
 
 @bp.route("/attendance")
@@ -60,11 +66,13 @@ def checkin():
     user_id = current_user["id"]
     today = localtime.today().isoformat()
 
-    if db.checkin_visit(user_id, today):
-        flash("Checked in for today. Nice work!", "success")
-    else:
-        flash("Already checked in today.", "error")
+    checked_in = db.checkin_visit(user_id, today)
+    message = "Checked in for today. Nice work!" if checked_in else "Already checked in today."
 
+    if _wants_json():
+        return jsonify({"ok": checked_in, "message": message})
+
+    flash(message, "success" if checked_in else "error")
     return redirect(url_for(_redirect_target()))
 
 

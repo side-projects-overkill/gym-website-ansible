@@ -456,7 +456,7 @@ textarea { font-family: "SF Mono", Consolas, Monaco, "Liberation Mono", monospac
 .day-accordion td { vertical-align: middle; }
 .day-accordion .last-log-date { margin-top: 3px; }
 .day-accordion .progressive-suggestion { margin-top: 5px; }
-.day-accordion .exercise-log-form { gap: 8px; row-gap: 6px; }
+.day-accordion .exercise-log-form { gap: 8px; row-gap: 6px; flex-wrap: wrap; }
 
 /* ---------------------------------------------------------------- */
 /* Dashboard "bento" overview grid                                   */
@@ -682,6 +682,25 @@ canvas.sparkline { display: block; width: 100%; height: 60px; margin-top: auto; 
 .exercise-log-form input.exercise-log-input-sm { width: 52px; }
 
 .muted { color: var(--text-muted); font-size: 0.85rem; }
+
+/* Transient feedback for the AJAX-submitted forms (see ajax-forms.js) -
+   appended into the form itself so it sits right next to whatever the
+   person just interacted with, instead of a flash message up at the top
+   of a page that no longer navigates anywhere. */
+.ajax-note {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+.ajax-note.is-visible { opacity: 1; transform: none; }
+.ajax-note.is-success { color: var(--success); }
+.ajax-note.is-error { color: var(--danger); }
+.exercise-log-form .ajax-note { flex-basis: 100%; margin: 2px 0 0; }
 
 canvas.chart { display: block; width: 100%; max-width: 100%; background: var(--card-bg-soft); border: 1px solid var(--border); border-radius: 14px; }
 

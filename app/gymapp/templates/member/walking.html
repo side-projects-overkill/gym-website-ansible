@@ -27,7 +27,8 @@
     {% if walked_today %}
     <p class="muted">You've already logged a walk today ({{ today }}). Nice work!</p>
     {% else %}
-    <form method="post" action="{{ url_for('walking.checkin') }}">
+    <form method="post" action="{{ url_for('walking.checkin') }}" class="checkin-form"
+          data-done-html="<p class=&quot;muted&quot;>You&#39;ve already logged a walk today ({{ today }}). Nice work!</p>">
         <button class="btn" type="submit">Check In a Walk for Today</button>
     </form>
     {% endif %}
