@@ -21,6 +21,7 @@ from . import (
     db,
     export_ai,
     food_config,
+    insights as insights_module,
     localtime,
     paths,
     progress as progress_module,
@@ -126,6 +127,7 @@ def dashboard():
     weekly_goal_pct = _weekly_goal_pct(progress_result["attendance_signal"])
     health_insights = _compute_health_insights(latest)
     daily_quote = quotes.get_daily_quote()
+    coach_insights = insights_module.compute_insights(user_id, db)
 
     food_of_day = None
     if os.path.exists(paths.user_foods_path(user_id)):
@@ -168,6 +170,7 @@ def dashboard():
         weekly_goal_pct=weekly_goal_pct,
         health_insights=health_insights,
         daily_quote=daily_quote,
+        coach_insights=coach_insights,
         food_of_day=food_of_day,
     )
 

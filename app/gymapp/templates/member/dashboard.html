@@ -99,6 +99,22 @@
         {% endif %}
     </div>
 
+    <div class="card bento-card bento-coach">
+        <div class="bento-card-title">Coach Insights</div>
+        {% if coach_insights %}
+        <ul class="coach-insight-list">
+            {% for i in coach_insights[:4] %}
+            <li class="coach-insight {{ 'is-warning' if i.severity == 'warning' }}">
+                <strong>{{ i.title }}</strong>
+                <span class="muted">{{ i.detail }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted">No issues detected - keep logging your sessions and patterns will show up here.</p>
+        {% endif %}
+    </div>
+
     <div class="card bento-card bento-weight">
         <div class="bento-card-title">Weight Goal</div>
         <div class="weight-stat-list">
