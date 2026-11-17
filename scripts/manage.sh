@@ -23,11 +23,14 @@ print_usage() {
     echo "Usage: $0 [COMMAND] [OPTIONS]"
     echo ""
     echo -e "${BLUE}Deployment Commands:${NC}"
+    echo "  app [password]      - Deploy the Gym Tracker app (primary target)"
     echo "  deploy [repo-url]   - Full deployment with backup"
     echo "  quick [repo-url]    - Quick deployment without backup"
     echo "  local              - Deploy local index.html with backup"
     echo "  local-quick        - Deploy local index.html without backup"
     echo "  backup             - Backup current website only"
+    echo ""
+    echo -e "${BLUE}Tip: the Makefile is the easiest entrypoint - 'make help'${NC}"
     echo ""
     echo -e "${BLUE}Management Commands:${NC}"
     echo "  status             - Check server and website status"
@@ -59,6 +62,27 @@ run_ansible_command() {
 }
 
 case "${1:-help}" in
+    "app")
+        echo -e "${GREEN}🚀 Deploying the Gym Tracker app...${NC}"
+        EXTRA_ARGS=""
+        if [ -n "$2" ]; then
+            EXTRA_ARGS="-e admin_password=$2"
+        fi
+        ansible-playbook playbooks/deploy-app.yml $EXTRA_ARGS
+        ;;
+    "app-status")
+        echo -e "${BLUE}📊 Gym Tracker app status:${NC}"
+        ansible gym-server -m shell -a \
+            "uptime; echo; systemctl is-active gymapp httpd; echo; df -h / | tail -1"
+        ;;
+    "app-logs")
+        echo -e "${BLUE}📋 Gym Tracker app logs (last 50 lines):${NC}"
+        ansible gym-server -m shell -a "journalctl -u gymapp -n 50 --no-pager"
+        ;;
+    "app-restart")
+        echo -e "${YELLOW}🔄 Restarting gymapp service...${NC}"
+        ansible gym-server -m systemd -a "name=gymapp state=restarted"
+        ;;
     "deploy")
         echo -e "${GREEN}🚀 Starting full website deployment...${NC}"
         if [ -n "$2" ]; then

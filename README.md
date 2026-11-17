@@ -70,6 +70,27 @@ All commands below assume you run them from the repository root.
 
 ## Quick Setup
 
+### The Easy Way (Make)
+
+After the prerequisites below, everything is one command:
+
+```bash
+make help        # list everything you can do
+make check       # pre-flight: tests + playbook syntax + server ping
+make deploy      # deploy the Gym Tracker app
+make status      # uptime, services, disk
+make logs        # tail the app journal
+make backup      # manual backup
+make rollback    # emergency restore
+```
+
+Tip: on first deploy only, pass an admin password:
+`make deploy EXTRA='-e admin_password=secret'` (omit it and a random one
+is generated and printed once).
+
+`scripts/manage.sh` remains available with the same operations plus
+`app`, `app-status`, `app-logs`, `app-restart` commands.
+
 ### Prerequisites
 
 1. **Install Ansible**:
