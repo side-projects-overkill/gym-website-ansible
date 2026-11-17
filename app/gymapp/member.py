@@ -19,6 +19,7 @@ from flask import (
 from . import (
     auth,
     db,
+    export_ai,
     food_config,
     localtime,
     paths,
@@ -479,6 +480,45 @@ def export_config():
         raw_yaml,
         mimetype="text/yaml",
         headers={"Content-Disposition": "attachment; filename=gym.yml"},
+    )
+
+
+# ---- AI-readable export -----------------------------------------------------
+
+
+@bp.route("/export/ai.md")
+@auth.login_required
+def export_ai_markdown():
+    current_user = auth.current_user()
+    try:
+        days = int(request.args.get("days", 90))
+    except ValueError:
+        return "Invalid days parameter.", 400
+    if days <= 0:
+        return "Invalid days parameter.", 400
+    payload = export_ai.build_export(current_user["id"], db, days=days)
+    return Response(
+        export_ai.to_markdown(payload),
+        mimetype="text/markdown",
+        headers={"Content-Disposition": 'attachment; filename="gym-progress-ai.md"'},
+    )
+
+
+@bp.route("/export/ai.json")
+@auth.login_required
+def export_ai_json():
+    current_user = auth.current_user()
+    try:
+        days = int(request.args.get("days", 90))
+    except ValueError:
+        return "Invalid days parameter.", 400
+    if days <= 0:
+        return "Invalid days parameter.", 400
+    payload = export_ai.build_export(current_user["id"], db, days=days)
+    return Response(
+        export_ai.to_json(payload),
+        mimetype="application/json",
+        headers={"Content-Disposition": 'attachment; filename="gym-progress-ai.json"'},
     )
 
 
