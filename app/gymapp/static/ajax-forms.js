@@ -152,3 +152,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+// ---- "Repeat last" quick-log prefill (Feature C) ---------------------------
+// ↻ buttons live inside each exercise's inline log form; clicking one just
+// fills the weight/reps inputs with that exercise's last logged values.
+document.addEventListener("click", (event) => {
+    const btn = event.target.closest(".exercise-repeat");
+    if (!btn) return;
+    const form = btn.closest("form");
+    if (!form) return;
+    const weight = form.querySelector('input[name="weight_kg"]');
+    const reps = form.querySelector('input[name="reps"]');
+    if (weight && btn.dataset.weight) weight.value = btn.dataset.weight;
+    if (reps && btn.dataset.reps) reps.value = btn.dataset.reps;
+    (reps || weight)?.focus();
+});

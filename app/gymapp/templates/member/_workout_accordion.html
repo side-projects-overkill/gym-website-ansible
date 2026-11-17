@@ -54,6 +54,9 @@
                             <input type="hidden" name="redirect_to" value="{{ _redirect_to }}">
                             <input type="number" step="any" name="weight_kg" placeholder="kg" class="exercise-log-input" aria-label="Weight for {{ ex.name }} (kg)">
                             <input type="number" step="1" name="reps" placeholder="reps" class="exercise-log-input exercise-log-input-sm" aria-label="Reps for {{ ex.name }}">
+                            {% if ex.last_log and (ex.last_log.weight_kg is not none or ex.last_log.reps is not none) %}
+                            <button type="button" class="btn btn-sm exercise-repeat" data-weight="{{ ex.last_log.weight_kg if ex.last_log.weight_kg is not none else '' }}" data-reps="{{ ex.last_log.reps if ex.last_log.reps is not none else '' }}" data-sets="{{ ex.last_log.sets if ex.last_log.sets is not none else '' }}" title="Prefill with your last session ({{ ex.last_log.weight_kg or '-' }}kg x {{ ex.last_log.reps or '-' }})">↻</button>
+                            {% endif %}
                             <button type="submit" class="btn btn-sm">Log</button>
                         </form>
                     </td>
