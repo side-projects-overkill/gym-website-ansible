@@ -1,5 +1,11 @@
 # Gym Website Deployment System
 
+[![CI](https://github.com/side-projects-overkill/gym-website-ansible/actions/workflows/tests.yml/badge.svg)](https://github.com/side-projects-overkill/gym-website-ansible/actions/workflows/tests.yml)
+[![Tests](https://img.shields.io/badge/tests-90%20passing-brightgreen)](app/tests)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](app/requirements-dev.txt)
+[![Flask](https://img.shields.io/badge/Flask-3.x-lightgrey)](app/requirements.txt)
+[![Ansible](https://img.shields.io/badge/ansible--core-2.16%2B-black)](playbooks/)
+
 A simple, practical Ansible setup for deploying and managing a fitness website. Perfect for personal projects, small teams, or learning automation.
 
 ## What This Does
