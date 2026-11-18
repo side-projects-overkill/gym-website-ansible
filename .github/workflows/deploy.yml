@@ -1,0 +1,59 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  tests:
+    # Reusable check: full Python suite + playbook syntax on a GitHub-hosted
+    # runner so broken code never reaches the server.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: app/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements-dev.txt
+          pip install "Flask>=3.0" "PyYAML>=6.0" "requests>=2.31"
+
+      - name: Run test suite
+        run: ./scripts/run-python-tests.sh
+
+  deploy:
+    needs: tests
+    runs-on: self-hosted
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # The runner IS the deploy target (gym-server), so we run the existing
+      # Ansible playbook with a local connection instead of SSH. The playbook
+      # stays the single source of truth for the deploy: packages, user,
+      # dirs, code sync, migrations, systemd, Apache config, health checks.
+      - name: Deploy via Ansible (local connection)
+        run: |
+          sudo /usr/bin/ansible-playbook \
+            -i inventory.yml \
+            -c local \
+            playbooks/deploy-app.yml
+
+      - name: Deploy static homepage
+        run: |
+          sudo /usr/bin/ansible-playbook \
+            -i inventory.yml \
+            -c local \
+            playbooks/deploy-local.yml
+
+      - name: Verify the site is up
+        run: |
+          curl -fsS -o /dev/null http://127.0.0.1/login
+          echo "Login page OK"

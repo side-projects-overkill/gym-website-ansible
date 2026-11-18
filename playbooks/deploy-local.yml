@@ -4,7 +4,7 @@
   gather_facts: yes
   vars:
     timestamp: "{{ ansible_date_time.epoch }}"
-    local_html_file: "website/index.html"
+    local_html_file: "{{ playbook_dir }}/../website/index.html"
     backup_current: "{{ backup_local | default(true) }}"
 
   tasks:
