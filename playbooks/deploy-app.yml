@@ -8,6 +8,27 @@
   gather_facts: yes
   vars:
     local_app_dir: "{{ playbook_dir }}/../app"
+    # Top-level route prefixes owned by the Flask app. Everything else is
+    # served statically from /var/www/html by Apache. Keep in sync with the
+    # routes registered in app/gymapp/ (see gymapp-httpd.conf.j2).
+    app_route_prefixes:
+      - account
+      - attendance
+      - dashboard
+      - export
+      - foods
+      - forgot-password
+      - goals
+      - login
+      - logout
+      - metrics
+      - plan
+      - register
+      - reset-password
+      - set-password
+      - static
+      - tracker
+      - walking
 
   tasks:
     - name: Install system packages for the app

@@ -113,6 +113,19 @@
         max-width: 46ch;
         margin-inline: auto;
     }
+    .hero-actions { margin-block-start: 20px; }
+    .btn-lg {
+        display: inline-block;
+        background: var(--accent);
+        color: var(--bg);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 12px 24px;
+        border-radius: 999px;
+        transition: background 0.15s ease, transform 0.15s ease;
+    }
+    .btn-lg:hover { background: var(--accent-strong); transform: translateY(-1px); }
 
     /* Sticky day nav */
     .day-nav {
@@ -410,6 +423,9 @@
         <p class="kicker">5-Day Split</p>
         <h1>Joint-First Execution Guide</h1>
         <p class="subtitle">Custom modded for maximum joint safety. Tap a day, tick your sets as you go.</p>
+        <p class="hero-actions">
+            <a class="btn-lg" href="/login">Open Gym Tracker →</a>
+        </p>
     </header>
 
     <nav class="day-nav" aria-label="Workout days">
