@@ -183,7 +183,10 @@ ansible-playbook playbooks/deploy-quick.yml
 - An **admin panel** (`/admin`) to edit that YAML, protected by a login.
 - A **body-metric tracker** (weight, height, body fat, or any custom metric you define) backed by SQLite, with history, a trend chart, and CSV export.
 
-It runs behind the existing Apache server via `mod_proxy` (gunicorn listens on `127.0.0.1:8099`; Apache reverse-proxies everything to it), so no new ports need to be opened.
+It runs behind the existing Apache server via `mod_proxy` (gunicorn listens on `127.0.0.1:8099`), so no new ports need to be opened. Routing:
+
+- `/` and `/guide` - the static workout guide (`website/index.html`), served by Apache. It loads the app's `/static/style.css` and mirrors its nav, so guide and app share one theme.
+- App route prefixes (`/login`, `/dashboard`, `/plan`, `/static`, ...) - proxied to the Flask app. The list lives in `app_route_prefixes` in `playbooks/deploy-app.yml`; add new top-level app routes there.
 
 ### Deploy / Update the App
 

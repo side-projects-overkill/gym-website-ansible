@@ -13,6 +13,9 @@ ProxyTimeout 60
 
 ProxyPass /server-status !
 
+# Clean URL for the static guide, linked from the app's top nav.
+Alias /guide /var/www/html/index.html
+
 {% for prefix in app_route_prefixes %}
 ProxyPass /{{ prefix }} http://127.0.0.1:{{ app_port }}/{{ prefix }}
 ProxyPassReverse /{{ prefix }} http://127.0.0.1:{{ app_port }}/{{ prefix }}
