@@ -25,6 +25,7 @@
       - plan
       - register
       - reset-password
+      - session
       - set-password
       - static
       - tracker

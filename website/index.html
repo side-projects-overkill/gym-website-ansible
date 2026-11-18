@@ -12,7 +12,7 @@
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;600;700;800&family=Red+Hat+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
 <style>
     /* Guide-only components - built on the app's tokens (--accent, --card-bg...). */
@@ -30,18 +30,18 @@
         border: 1px solid var(--border); background: var(--card-bg);
         transition: color 0.15s ease, border-color 0.15s ease;
     }
-    .day-pill:hover { color: var(--text-main); border-color: rgba(91, 124, 255, 0.5); text-decoration: none; }
-    .day-pill.today { color: #fff; background-image: var(--accent-gradient); border-color: transparent; }
+    .day-pill:hover { color: var(--text-main); border-color: var(--text-dim); text-decoration: none; }
+    .day-pill.today { color: var(--bg); background: var(--accent); border-color: var(--accent); }
     .toolbar .spacer { flex: 1; }
     .toolbar input[type="search"] {
         width: 200px; margin: 0; padding: 8px 14px; border-radius: 999px;
         border: 1px solid var(--border); background: var(--card-bg);
         color: var(--text-main); font: inherit; font-size: 0.85rem;
     }
-    .toolbar input[type="search"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91, 124, 255, 0.25); }
+    .toolbar input[type="search"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
-    .rules-card { border-color: rgba(248, 83, 106, 0.3); }
-    .rules-card .icon-chip { background-image: linear-gradient(135deg, var(--danger), var(--danger-2)); box-shadow: 0 4px 14px rgba(248, 83, 106, 0.35); }
+    .rules-card { border-color: rgba(242, 102, 122, 0.25); }
+    
     .rules-card ul { padding-left: 20px; display: grid; gap: 8px; }
     .rules-card li { font-size: 0.92rem; color: var(--text-muted); }
     .rules-card li strong { color: var(--text-main); }
@@ -59,7 +59,7 @@
     .set-check { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; vertical-align: middle; }
     .row-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
     .note-input { margin: 6px 0 0 !important; font-size: 0.85rem !important; }
-    .note-toggle.has-note { color: var(--accent); border-color: rgba(91, 124, 255, 0.5); }
+    .note-toggle.has-note { color: var(--accent); border-color: var(--accent); }
 
     .rest-note { text-align: center; color: var(--text-muted); }
 
@@ -68,13 +68,12 @@
         position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
         z-index: 60; display: none; align-items: center; gap: 16px; flex-wrap: wrap;
         width: min(560px, calc(100% - 24px)); padding: 14px 18px;
-        background: var(--card-bg-soft); border: 1px solid rgba(91, 124, 255, 0.4);
-        border-radius: 18px; box-shadow: 0 0 50px rgba(91, 124, 255, 0.25), var(--shadow-glow);
+        background: var(--card-bg-soft); border: 1px solid var(--border);
+        border-radius: 14px;
     }
     .timer-bar.active { display: flex; }
     .timer-time {
-        font-size: 1.7rem; font-weight: 800; min-width: 4.5ch; font-variant-numeric: tabular-nums;
-        background-image: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; color: transparent;
+        font-size: 1.7rem; font-weight: 700; min-width: 4.5ch; font-variant-numeric: tabular-nums; color: var(--accent);
     }
     .timer-label { flex: 1; min-width: 10ch; color: var(--text-muted); font-size: 0.85rem; }
     .timer-bar.done .timer-time { animation: timer-pulse 0.8s ease infinite alternate; }
@@ -97,8 +96,6 @@
 </style>
 </head>
 <body>
-<div class="bg-glow bg-glow-a" aria-hidden="true"></div>
-<div class="bg-glow bg-glow-b" aria-hidden="true"></div>
 
 <!-- Same nav markup as the app's base.html, so the two read as one site. -->
 <nav class="topnav">
@@ -106,13 +103,11 @@
         <a class="brand" href="/">🏋️ Gym Tracker</a>
         <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navLinks">☰</button>
         <div class="topnav-links" id="navLinks">
-            <div class="topnav-links-primary">
+            <!-- Filled from /session so it matches the app's nav (logged in or not). -->
+            <div class="topnav-links-primary" id="navPrimary">
                 <a href="/guide" class="active">Guide</a>
-                <a href="/dashboard">Dashboard</a>
-                <a href="/plan">Workout Plan</a>
-                <a href="/tracker">Tracker</a>
-                <a href="/foods">Food Guide</a>
                 <a href="/login">Login</a>
+                <a href="/register">Register</a>
             </div>
         </div>
     </div>
@@ -126,7 +121,7 @@
         <p class="hero-subtitle">Your execution guide for the week. Tick an exercise and the rest timer starts itself.</p>
         <div class="btn-group hero-actions">
             <a class="btn btn-lg" id="jump-today" href="#days">Start today's workout</a>
-            <a class="btn btn-lg btn-secondary" href="/dashboard">Open Tracker →</a>
+            <a class="btn btn-lg btn-secondary" id="tracker-cta" href="/login">Log in to track →</a>
         </div>
     </section>
 
@@ -442,6 +437,40 @@
     document.querySelectorAll('.day-pill, #jump-today').forEach(function (a) {
         a.addEventListener('click', function (ev) { ev.preventDefault(); openAndScroll(a.getAttribute('href')); });
     });
+    /* ---------- session-aware nav (mirrors the app's base.html) ---------- */
+    function renderNav(sess) {
+        var primary = document.getElementById('navPrimary');
+        if (!sess || !sess.logged_in) return; /* logged-out markup is the default */
+        var links = [['/guide', 'Guide', true], ['/dashboard', 'Today'], ['/plan', 'Plan'],
+            ['/tracker', 'Progress'], ['/foods', 'Food'], ['/attendance', 'Gym'],
+            ['/walking', 'Walks'], ['/goals', 'Goals']];
+        primary.innerHTML = links.map(function (l) {
+            return '<a href="' + l[0] + '"' + (l[2] ? ' class="active"' : '') + '>' + l[1] + '</a>';
+        }).join('');
+        var menu = document.createElement('details');
+        menu.className = 'nav-menu';
+        menu.innerHTML =
+            '<summary aria-label="Settings and account">⚙️ <span class="nav-menu-label">Settings</span></summary>' +
+            '<div class="nav-menu-panel">' +
+            '<span class="nav-menu-heading">Customize</span>' +
+            '<a href="/plan/edit">Edit workout program</a><a href="/foods/edit">Edit food guide</a><a href="/metrics">Metric types</a>' +
+            '<span class="nav-menu-heading">Export</span>' +
+            '<a href="/export/logs.csv">All logs (CSV)</a><a href="/export/ai.md">For AI (Markdown)</a><a href="/export/ai.json">For AI (JSON)</a>' +
+            '<span class="nav-menu-heading">Account</span>' +
+            '<a href="/account/password">Change password</a><a href="/logout">Log out</a></div>';
+        primary.parentNode.appendChild(menu);
+        document.addEventListener('click', function (e) { if (!menu.contains(e.target)) menu.removeAttribute('open'); });
+        var cta = document.getElementById('tracker-cta');
+        cta.href = '/dashboard';
+        cta.textContent = 'Open Tracker →';
+    }
+    if (window.fetch) {
+        fetch('/session', { credentials: 'same-origin', cache: 'no-store' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(renderNav)
+            .catch(function () { /* app down - keep logged-out nav */ });
+    }
+
     document.getElementById('navToggle').addEventListener('click', function () {
         var open = document.getElementById('navLinks').classList.toggle('open');
         this.setAttribute('aria-expanded', open);

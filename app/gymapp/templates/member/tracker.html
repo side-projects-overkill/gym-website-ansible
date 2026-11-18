@@ -1,106 +1,96 @@
 {% extends "base.html" %}
-{% block title %}Tracker - Gym Tracker{% endblock %}
+{% block title %}Progress - Gym Tracker{% endblock %}
 {% block content %}
-<h1>Body & Progress Tracker</h1>
-<p class="subtitle">Log height, weight, or any custom metric over time.</p>
-
-<div class="card">
-    <div class="card-header">
-        <div class="icon-chip">📝</div>
-        <h2 style="margin:0;">Log a New Entry</h2>
+<header class="page-header">
+    <div>
+        <h1>Progress</h1>
+        <p class="subtitle">Log body metrics and watch the trend. <a href="{{ url_for('member.metrics') }}">Manage metric types</a></p>
     </div>
-    <form method="post" action="{{ url_for('member.tracker_add') }}" id="trackerLogForm">
-        <div class="form-row">
-            <div>
-                <label for="log_date">Date</label>
-                <input type="date" id="log_date" name="log_date" value="{{ today }}" required>
-            </div>
-            <div>
-                <label for="metric_key">Metric</label>
-                <select id="metric_key" name="metric_key" required>
-                    {% for d in defs %}
-                    <option value="{{ d.metric_key }}" {% if metric_filter == d.metric_key %}selected{% endif %}>{{ d.label }} ({{ d.unit }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="value">Value</label>
-                <input type="number" step="any" id="value" name="value" {% if metric_filter %}autofocus{% endif %} required>
-            </div>
-        </div>
-        <label for="notes">Notes (optional)</label>
-        <input type="text" id="notes" name="notes" placeholder="e.g. morning, fasted">
-        <button class="btn" type="submit">Log Entry</button>
-    </form>
-    {% if not defs %}
-    <p class="muted">No metric types yet &mdash; add one on the <a href="{{ url_for('member.metrics') }}">Metrics</a> page first.</p>
-    {% endif %}
+</header>
+
+{% if not defs %}
+<div class="card empty-state">
+    <p>No metric types yet.</p>
+    <a class="btn" href="{{ url_for('member.metrics') }}">Add a metric</a>
 </div>
-
-<div class="card">
-    <div class="card-header">
-        <div class="icon-chip">📈</div>
-        <h2 style="margin:0;">Trend</h2>
-    </div>
-    <div class="form-row" style="align-items:end;">
+{% else %}
+<form method="post" action="{{ url_for('member.tracker_add') }}" id="trackerLogForm" class="card log-form">
+    <div class="log-form-grid">
         <div>
-            <label for="chart_metric">Metric</label>
-            <select id="chart_metric">
+            <label for="metric_key">Metric</label>
+            <select id="metric_key" name="metric_key" required>
                 {% for d in defs %}
                 <option value="{{ d.metric_key }}" {% if metric_filter == d.metric_key %}selected{% endif %}>{{ d.label }} ({{ d.unit }})</option>
                 {% endfor %}
             </select>
         </div>
+        <div>
+            <label for="value">Value</label>
+            <input type="number" step="any" id="value" name="value" {% if metric_filter %}autofocus{% endif %} required>
+        </div>
+        <div>
+            <label for="log_date">Date</label>
+            <input type="date" id="log_date" name="log_date" value="{{ today }}" required>
+        </div>
+        <div class="log-form-notes">
+            <label for="notes">Note</label>
+            <input type="text" id="notes" name="notes" placeholder="optional, e.g. fasted">
+        </div>
+        <div class="log-form-submit">
+            <button class="btn" type="submit">Log</button>
+        </div>
     </div>
+</form>
+
+<div class="section-head">
+    <h2 class="section-title">Trend</h2>
+    <select id="chart_metric" class="select-inline" aria-label="Metric to chart">
+        {% for d in defs %}
+        <option value="{{ d.metric_key }}" {% if metric_filter == d.metric_key %}selected{% endif %}>{{ d.label }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div class="card">
     <canvas id="trendChart" class="chart" height="220"></canvas>
     <p id="chartEmpty" class="muted" style="display:none;">No data logged for this metric yet.</p>
 </div>
+{% endif %}
 
-<div class="card">
-    <div class="card-header">
-        <div class="icon-chip">🗒️</div>
-        <h2 style="margin:0;">History</h2>
-    </div>
-    <form method="get" style="margin-bottom:12px;">
-        <div class="form-row" style="align-items:end;">
-            <div>
-                <label for="metric">Filter by metric</label>
-                <select id="metric" name="metric" onchange="this.form.submit()">
-                    <option value="">All metrics</option>
-                    {% for d in defs %}
-                    <option value="{{ d.metric_key }}" {% if metric_filter == d.metric_key %}selected{% endif %}>{{ d.label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <a class="btn btn-secondary" href="{{ url_for('member.export_logs_csv') }}">Export CSV</a>
-            </div>
-        </div>
+<div class="section-head">
+    <h2 class="section-title">History</h2>
+    <form method="get" class="section-head-tools">
+        <select id="metric" name="metric" class="select-inline" onchange="this.form.submit()" aria-label="Filter by metric">
+            <option value="">All metrics</option>
+            {% for d in defs %}
+            <option value="{{ d.metric_key }}" {% if metric_filter == d.metric_key %}selected{% endif %}>{{ d.label }}</option>
+            {% endfor %}
+        </select>
+        <a class="btn btn-sm btn-secondary" href="{{ url_for('member.export_logs_csv') }}">⬇ CSV</a>
     </form>
-    <div class="table-wrapper">
-        <table class="responsive-table">
-            <thead>
-                <tr><th>Date</th><th>Metric</th><th>Value</th><th>Notes</th><th></th></tr>
-            </thead>
-            <tbody id="historyTbody">
-                {% for row in logs %}
-                <tr>
-                    <td data-label="Date">{{ row.log_date }}</td>
-                    <td data-label="Metric">{{ row.label }}</td>
-                    <td data-label="Value">{{ row.value }} {{ row.unit }}</td>
-                    <td data-label="Notes">{{ row.notes }}</td>
-                    <td>
-                        <form method="post" action="{{ url_for('member.tracker_delete', log_id=row.id) }}" onsubmit="return confirm('Delete this entry?');" style="display:inline;">
-                            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr class="history-empty"><td colspan="5" class="muted">No entries yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+</div>
+<div class="table-wrapper">
+    <table class="responsive-table">
+        <thead>
+            <tr><th>Date</th><th>Metric</th><th>Value</th><th>Note</th><th></th></tr>
+        </thead>
+        <tbody id="historyTbody">
+            {% for row in logs %}
+            <tr>
+                <td data-label="Date">{{ row.log_date }}</td>
+                <td data-label="Metric">{{ row.label }}</td>
+                <td data-label="Value"><strong>{{ row.value }}</strong> {{ row.unit }}</td>
+                <td data-label="Note">{{ row.notes }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('member.tracker_delete', log_id=row.id) }}" onsubmit="return confirm('Delete this entry?');">
+                        <button class="icon-delete" type="submit" aria-label="Delete entry" title="Delete">✕</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr class="history-empty"><td colspan="5" class="muted">No entries yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 <script src="{{ url_for('static', filename='chart.js') }}?v={{ asset_version }}"></script>

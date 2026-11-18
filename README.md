@@ -187,6 +187,9 @@ It runs behind the existing Apache server via `mod_proxy` (gunicorn listens on `
 
 - `/` and `/guide` - the static workout guide (`website/index.html`), served by Apache. It loads the app's `/static/style.css` and mirrors its nav, so guide and app share one theme.
 - App route prefixes (`/login`, `/dashboard`, `/plan`, `/static`, ...) - proxied to the Flask app. The list lives in `app_route_prefixes` in `playbooks/deploy-app.yml`; add new top-level app routes there.
+- `/session` - tiny public JSON endpoint (`{"logged_in": bool, "username"?}`, `Cache-Control: no-store`) the static guide uses to show the logged-in nav.
+
+**Theme:** one shared stylesheet (`app/gymapp/static/style.css`) for app and guide - minimal dark surfaces, a single blue accent, Red Hat Display for headings and Red Hat Text for body copy. Change the tokens in `:root` to retheme everything.
 
 ### Deploy / Update the App
 

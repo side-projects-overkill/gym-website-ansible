@@ -2,10 +2,14 @@
    collapsed everywhere else - native <details>/<summary>, so this needs no
    JS at all. Included from plan.html and dashboard.html.
 
+   Three columns keep it scannable: what to do (exercise + form cue + video),
+   the target (sets x reps, rest), and logging (last session + quick-log).
+
    Expects each exercise dict to already carry `last_log` / `suggestion`
    keys (see progressive_load.annotate_days, called by member.py before
    rendering). `redirect_to` controls where the inline quick-log form sends
-   you back to - defaults to the plan page. #}
+   you back to - defaults to the plan page. ajax-forms.js updates the
+   `.last-log` element in the row after a successful quick-log. #}
 {% set _redirect_to = redirect_to|default('plan') %}
 {% for day in days %}
 <details class="day-accordion" {% if loop.index0 == today_index %}open{% endif %}>
@@ -14,40 +18,40 @@
             {{ day.name }}
             {% if loop.index0 == today_index %}<span class="today-badge">Today</span>{% endif %}
         </span>
-        <span class="chevron">▾</span>
+        <span class="day-title-text">
+            <span class="day-count">{{ day.exercises|length }} exercises</span>
+            <span class="chevron">▾</span>
+        </span>
     </summary>
     <div class="table-wrapper">
-        <table class="responsive-table">
+        <table class="responsive-table workout-table">
             <thead>
-                <tr>
-                    <th>Exercise</th>
-                    <th>Sets x Reps</th>
-                    <th>Rest</th>
-                    <th>Form Focus</th>
-                    <th>Last Logged</th>
-                    <th>Log Today</th>
-                    {% if day.exercises and day.exercises|selectattr('video_query', 'defined')|list %}
-                    <th>Video</th>
-                    {% endif %}
-                </tr>
+                <tr><th>Exercise</th><th>Target</th><th>Log</th></tr>
             </thead>
             <tbody>
                 {% for ex in day.exercises %}
                 <tr>
-                    <td class="exercise-name" data-label="Exercise">{{ ex.name }}</td>
-                    <td data-label="Sets x Reps">{{ ex.sets_reps or "-" }}</td>
-                    <td data-label="Rest">{{ ex.rest or "-" }}</td>
-                    <td data-label="Form Focus">{{ ex.form_focus or "" }}</td>
-                    <td data-label="Last Logged">
-                        {% if ex.last_log %}
-                        <span class="last-log-value">{% if ex.last_log.weight_kg is not none %}{{ ex.last_log.weight_kg }}kg{% else %}-{% endif %}{% if ex.last_log.reps is not none %} &times; {{ ex.last_log.reps }}{% endif %}</span>
-                        <span class="last-log-date">{{ ex.last_log.log_date }}</span>
-                        {% if ex.suggestion %}<span class="progressive-suggestion">📈 {{ ex.suggestion }}</span>{% endif %}
-                        {% else %}
-                        <span class="muted">Not logged yet</span>
-                        {% endif %}
+                    <td data-label="Exercise">
+                        <div class="exercise-name">
+                            {{ ex.name }}
+                            {% if ex.video_query %}<a href="{{ ex.video_query|youtube_search_url }}" target="_blank" rel="noopener" class="video-link" title="Watch form video" aria-label="Form video for {{ ex.name }}">▶</a>{% endif %}
+                        </div>
+                        {% if ex.form_focus %}<div class="form-cue">{{ ex.form_focus }}</div>{% endif %}
                     </td>
-                    <td data-label="Log Today">
+                    <td data-label="Target" class="target-cell">
+                        <span class="target-sets">{{ ex.sets_reps or "-" }}</span>
+                        {% if ex.rest %}<span class="target-rest">⏱ {{ ex.rest }}</span>{% endif %}
+                    </td>
+                    <td data-label="Log">
+                        <div class="last-log">
+                            {% if ex.last_log %}
+                            <span class="last-log-value">{% if ex.last_log.weight_kg is not none %}{{ ex.last_log.weight_kg }}kg{% else %}-{% endif %}{% if ex.last_log.reps is not none %} &times; {{ ex.last_log.reps }}{% endif %}</span>
+                            <span class="last-log-date">{{ ex.last_log.log_date }}</span>
+                            {% if ex.suggestion %}<span class="progressive-suggestion">📈 {{ ex.suggestion }}</span>{% endif %}
+                            {% else %}
+                            <span class="muted small">Not logged yet</span>
+                            {% endif %}
+                        </div>
                         <form method="post" action="{{ url_for('member.log_exercise') }}" class="exercise-log-form">
                             <input type="hidden" name="exercise_name" value="{{ ex.name }}">
                             <input type="hidden" name="sets_reps" value="{{ ex.sets_reps or '' }}">
@@ -55,16 +59,11 @@
                             <input type="number" step="any" name="weight_kg" placeholder="kg" class="exercise-log-input" aria-label="Weight for {{ ex.name }} (kg)">
                             <input type="number" step="1" name="reps" placeholder="reps" class="exercise-log-input exercise-log-input-sm" aria-label="Reps for {{ ex.name }}">
                             {% if ex.last_log and (ex.last_log.weight_kg is not none or ex.last_log.reps is not none) %}
-                            <button type="button" class="btn btn-sm exercise-repeat" data-weight="{{ ex.last_log.weight_kg if ex.last_log.weight_kg is not none else '' }}" data-reps="{{ ex.last_log.reps if ex.last_log.reps is not none else '' }}" data-sets="{{ ex.last_log.sets if ex.last_log.sets is not none else '' }}" title="Prefill with your last session ({{ ex.last_log.weight_kg or '-' }}kg x {{ ex.last_log.reps or '-' }})">↻</button>
+                            <button type="button" class="btn btn-sm btn-secondary exercise-repeat" data-weight="{{ ex.last_log.weight_kg if ex.last_log.weight_kg is not none else '' }}" data-reps="{{ ex.last_log.reps if ex.last_log.reps is not none else '' }}" data-sets="{{ ex.last_log.sets if ex.last_log.sets is not none else '' }}" title="Prefill with your last session ({{ ex.last_log.weight_kg or '-' }}kg x {{ ex.last_log.reps or '-' }})">↻</button>
                             {% endif %}
                             <button type="submit" class="btn btn-sm">Log</button>
                         </form>
                     </td>
-                    {% if ex.video_query %}
-                    <td data-label="Video"><a href="{{ ex.video_query|youtube_search_url }}" target="_blank" rel="noopener" class="btn btn-sm">View</a></td>
-                    {% elif day.exercises|selectattr('video_query', 'defined')|list %}
-                    <td data-label="Video">-</td>
-                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

@@ -1,22 +1,23 @@
 {% extends "base.html" %}
 {% block title %}{{ site.title }}{% endblock %}
 {% block content %}
-    <h1>{{ site.title }}</h1>
-    {% if site.subtitle %}<p class="subtitle">{{ site.subtitle }}</p>{% endif %}
-
-    {% if not days %}
-    <div class="card">
-        <p class="muted">No workout days configured yet. Log in to the admin panel to add your program.</p>
+<header class="page-header">
+    <div>
+        <h1>{{ site.title }}</h1>
+        {% if site.subtitle %}<p class="subtitle">{{ site.subtitle }}</p>{% endif %}
     </div>
-    {% endif %}
-
-    {% set redirect_to = 'plan' %}
-    {% include "member/_workout_accordion.html" %}
-
-    <div class="footer">
-        <a href="{{ url_for('member.config_editor') }}">✏️ Edit this plan</a>
-        <div class="credits">
-            <small>Powered by Flask + SQLite &bull; Deployed with Ansible</small>
-        </div>
+    <div class="page-header-action">
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('member.config_editor') }}">✏️ Edit plan</a>
     </div>
+</header>
+
+{% if not days %}
+<div class="card empty-state">
+    <p>No workout days yet.</p>
+    <a class="btn" href="{{ url_for('member.config_editor') }}">Add your program</a>
+</div>
+{% endif %}
+
+{% set redirect_to = 'plan' %}
+{% include "member/_workout_accordion.html" %}
 {% endblock %}

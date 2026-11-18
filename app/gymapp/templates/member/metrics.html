@@ -1,12 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Metrics - Gym Tracker{% endblock %}
 {% block content %}
-<h1>Trackable Metrics</h1>
-<p class="subtitle">Define whatever you want to track &mdash; weight, height, waist, mood, anything.</p>
+<header class="page-header">
+    <div>
+        <h1>Metric types</h1>
+        <p class="subtitle">What you can log on the Progress page - weight, waist, mood, anything.</p>
+    </div>
+</header>
 
-<div class="card">
-    <h2 style="margin-top:0;">Add / Update a Metric</h2>
-    <form method="post" action="{{ url_for('member.metrics_add') }}">
+<details class="card collapsible">
+    <summary>➕ Add or update a metric</summary>
+    <form method="post" action="{{ url_for('member.metrics_add') }}" class="collapsible-body">
         <div class="form-row">
             <div>
                 <label for="metric_key">Key</label>
@@ -25,13 +29,11 @@
                 <input type="number" id="sort_order" name="sort_order" value="0">
             </div>
         </div>
-        <button class="btn" type="submit">Save Metric</button>
+        <button class="btn" type="submit">Save metric</button>
     </form>
-</div>
+</details>
 
-<div class="card">
-    <h2 style="margin-top:0;">Existing Metrics</h2>
-    <div class="table-wrapper">
+<div class="table-wrapper">
         <table class="responsive-table">
             <thead><tr><th>Key</th><th>Label</th><th>Unit</th><th>Order</th><th></th></tr></thead>
             <tbody>
@@ -42,14 +44,13 @@
                     <td data-label="Unit">{{ d.unit }}</td>
                     <td data-label="Order">{{ d.sort_order }}</td>
                     <td>
-                        <form method="post" action="{{ url_for('member.metrics_delete', metric_key=d.metric_key) }}" onsubmit="return confirm('Delete this metric AND all logged history for it?');" style="display:inline;">
-                            <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                        <form method="post" action="{{ url_for('member.metrics_delete', metric_key=d.metric_key) }}" onsubmit="return confirm('Delete this metric AND all logged history for it?');">
+                            <button class="icon-delete" type="submit" aria-label="Delete {{ d.label }}" title="Delete">✕</button>
                         </form>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    </div>
 </div>
 {% endblock %}

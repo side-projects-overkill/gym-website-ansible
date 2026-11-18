@@ -11,8 +11,8 @@
             <div class="icon-chip">⚖️</div>
             <h2 style="margin:0;">Current Weight</h2>
         </div>
-        <div style="font-size:1.9rem; font-weight:800; color:var(--text-main);">{{ current_weight.value }} <small style="font-size:1rem; font-weight:600; color:var(--text-muted);">{{ current_weight.unit }}</small></div>
-        <p class="muted" style="margin:6px 0 0;">as of {{ current_weight.log_date }}</p>
+        <div class="stat-big">{{ current_weight.value }}<small>{{ current_weight.unit }}</small></div>
+        <p class="muted">as of {{ current_weight.log_date }}</p>
     </div>
     {% endif %}
 

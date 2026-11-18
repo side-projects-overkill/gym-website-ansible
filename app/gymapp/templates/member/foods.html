@@ -1,24 +1,34 @@
 {% extends "base.html" %}
 {% block title %}Food Guide - Gym Tracker{% endblock %}
 {% block content %}
-    <h1>High-Volume Food Guide</h1>
-    <p class="subtitle">{{ intro }}</p>
+<header class="page-header">
+    <div>
+        <h1>Food guide</h1>
+        <p class="subtitle">{{ intro }}</p>
+    </div>
+    <div class="page-header-action">
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('member.foods_editor') }}">✏️ Edit list</a>
+    </div>
+</header>
 
     {% if not categories %}
     <div class="card">
-        <p class="muted">No foods configured yet. Log in to the admin panel to add some.</p>
+        <p class="muted">No foods configured yet. <a href="{{ url_for('member.foods_editor') }}">Add some</a>.</p>
     </div>
     {% endif %}
 
     {% for cat in categories %}
-    <div class="day-section">
-        <div class="day-title">{{ cat.name }}</div>
+    <details class="day-accordion" {% if loop.first %}open{% endif %}>
+        <summary class="day-title">
+            <span class="day-title-text">{{ cat.name }}</span>
+            <span class="day-title-text"><span class="day-count">{{ cat.foods|length }} foods</span><span class="chevron">▾</span></span>
+        </summary>
         <div class="table-wrapper">
             <table class="responsive-table">
                 <thead>
                     <tr>
                         <th>Food</th>
-                        <th>Calories / 100g</th>
+                        <th>kcal / 100g</th>
                         <th>Why it helps</th>
                     </tr>
                 </thead>
@@ -26,20 +36,15 @@
                     {% for food in cat.foods %}
                     <tr>
                         <td class="exercise-name" data-label="Food">{{ food.name }}</td>
-                        <td data-label="Calories / 100g">{{ food.calories_per_100g }}</td>
+                        <td data-label="kcal / 100g">{{ food.calories_per_100g }}</td>
                         <td data-label="Why it helps">{{ food.tip or "" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+    </details>
     {% endfor %}
+    <p class="muted small center">Sorted lowest to highest calorie density within each category.</p>
 
-    <div class="footer">
-        <a href="{{ url_for('member.plan') }}">&larr; Back to Workout Plan</a>
-        <div class="credits">
-            <small>Sorted lowest-to-highest calorie density within each category. Edit this list at <code>/foods/edit</code>.</small>
-        </div>
-    </div>
 {% endblock %}

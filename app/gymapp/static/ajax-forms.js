@@ -1,3 +1,9 @@
+// Escape user/server values before interpolating them into innerHTML.
+function escapeHtml(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g,
+        (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
 /* Progressive enhancement for the handful of frequently-used log/check-in
  * forms (log weight/metric, log an exercise, gym/walk check-in). These all
  * still work as plain HTML forms (POST -> redirect) if JS is unavailable,
@@ -55,7 +61,8 @@ document.addEventListener("DOMContentLoaded", () => {
         form.addEventListener("submit", (event) => {
             event.preventDefault();
             const button = form.querySelector("button[type=submit]");
-            const lastLoggedCell = form.closest("td") && form.closest("td").previousElementSibling;
+            const row = form.closest("tr");
+            const lastLoggedCell = row && row.querySelector(".last-log");
             if (button) button.disabled = true;
 
             ajaxSubmitForm(form, {
@@ -63,14 +70,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (lastLoggedCell && data.last_log) {
                         const w = data.last_log.weight_kg;
                         const r = data.last_log.reps;
-                        const weightText = w != null ? `${w}kg` : "-";
-                        const repsText = r != null ? ` &times; ${r}` : "";
+                        const weightText = w != null ? `${escapeHtml(w)}kg` : "-";
+                        const repsText = r != null ? ` &times; ${escapeHtml(r)}` : "";
                         const suggestionHtml = data.suggestion
-                            ? `<span class="progressive-suggestion">\ud83d\udcc8 ${data.suggestion}</span>`
+                            ? `<span class="progressive-suggestion">\ud83d\udcc8 ${escapeHtml(data.suggestion)}</span>`
                             : "";
                         lastLoggedCell.innerHTML =
                             `<span class="last-log-value">${weightText}${repsText}</span>` +
-                            `<span class="last-log-date">${data.last_log.log_date}</span>` +
+                            `<span class="last-log-date">${escapeHtml(data.last_log.log_date)}</span>` +
                             suggestionHtml;
                     }
                     form.reset();
@@ -121,15 +128,16 @@ document.addEventListener("DOMContentLoaded", () => {
                         const emptyRow = tbody.querySelector(".history-empty");
                         if (emptyRow) emptyRow.remove();
 
+                        const esc = escapeHtml;
                         const tr = document.createElement("tr");
                         tr.innerHTML =
-                            `<td data-label="Date">${data.log.log_date}</td>` +
-                            `<td data-label="Metric">${data.log.label}</td>` +
-                            `<td data-label="Value">${data.log.value} ${data.log.unit}</td>` +
-                            `<td data-label="Notes">${data.log.notes || ""}</td>` +
-                            `<td><form method="post" action="/tracker/${data.log.id}/delete" ` +
-                            `onsubmit="return confirm('Delete this entry?');" style="display:inline;">` +
-                            `<button class="btn btn-sm btn-danger" type="submit">Delete</button></form></td>`;
+                            `<td data-label="Date">${esc(data.log.log_date)}</td>` +
+                            `<td data-label="Metric">${esc(data.log.label)}</td>` +
+                            `<td data-label="Value"><strong>${esc(data.log.value)}</strong> ${esc(data.log.unit)}</td>` +
+                            `<td data-label="Note">${esc(data.log.notes)}</td>` +
+                            `<td><form method="post" action="/tracker/${encodeURIComponent(data.log.id)}/delete" ` +
+                            `onsubmit="return confirm('Delete this entry?');">` +
+                            `<button class="icon-delete" type="submit" aria-label="Delete entry" title="Delete">✕</button></form></td>`;
                         tbody.insertBefore(tr, tbody.firstChild);
                     }
 

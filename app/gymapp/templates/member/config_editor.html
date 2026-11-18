@@ -1,23 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Workout Config - Gym Tracker{% endblock %}
 {% block content %}
-<h1>Workout Config</h1>
-<p class="subtitle">Edit the YAML that drives the public workout page. Saving validates the YAML first.</p>
+<header class="page-header">
+    <div>
+        <h1>Edit workout program</h1>
+        <p class="subtitle">YAML that drives your Plan page. It's validated before saving, and a backup is kept.</p>
+    </div>
+</header>
 
 <div class="card">
     <form method="post">
         <textarea name="raw_yaml" rows="28" spellcheck="false">{{ raw_yaml }}</textarea>
         <div class="btn-group">
-            <button class="btn" type="submit">Save Config</button>
+            <button class="btn" type="submit">Save</button>
             <a class="btn btn-secondary" href="{{ url_for('member.export_config') }}">Download .yml</a>
-            <a class="btn btn-secondary" href="{{ url_for('member.config_backups') }}">View Backups</a>
+            <a class="btn btn-secondary" href="{{ url_for('member.config_backups') }}">Backups</a>
         </div>
     </form>
 </div>
 
-<div class="card">
-    <h2 style="margin-top:0;">Format Reference</h2>
-    <pre class="muted" style="white-space:pre-wrap; font-size:0.8rem;">site:
+<details class="card collapsible">
+    <summary>📘 Format reference</summary>
+    <pre class="code-ref collapsible-body">site:
   title: "My Program"
   subtitle: "Optional subtitle"
 
@@ -28,6 +32,6 @@ days:
         sets_reps: "3 x 8-12"
         rest: "90s"
         form_focus: "Keep elbows tucked."
-        video_query: "bench press proper form"   # optional, adds a "View" link</pre>
-</div>
+        video_query: "bench press proper form"   # optional, adds a video link</pre>
+</details>
 {% endblock %}
