@@ -1,51 +1,35 @@
 {% extends "base.html" %}
-{% block title %}Gym Tracker - Track Your Training{% endblock %}
+{% block title %}Gym Tracker - Train smart, track simply{% endblock %}
 {% block content %}
-<section class="hero">
-    <div class="hero-eyebrow">🔥 Built for people who train seriously</div>
-    <h1 class="hero-title">Track your training.<br>See your progress.</h1>
-    <p class="hero-subtitle">
-        Your workout plans, a high-volume food guide, body metrics, and gym
-        attendance streaks - all in one place. Built for people who take
-        their training seriously.
+<section class="landing-hero">
+    <p class="landing-eyebrow">Joint-first training, tracked simply</p>
+    <h1 class="landing-title">Show up. Log it.<br>Watch it add up.</h1>
+    <p class="landing-sub">
+        Your workout plan with a built-in rest timer, one-tap gym and walk
+        check-ins, body metrics, and a filling-food guide - in one calm place.
     </p>
-    <div class="btn-group hero-actions">
-        <a class="btn btn-lg" href="{{ url_for('registration.register') }}">Create Account</a>
-        <a class="btn btn-secondary btn-lg" href="{{ url_for('member.login') }}">Sign In</a>
+    <div class="btn-group landing-actions">
+        <a class="btn btn-lg" href="/register">Create free account</a>
+        <a class="btn btn-lg btn-secondary" href="/login">Log in</a>
     </div>
-    <p class="hero-note">📱 Requires a free Telegram account - it's how we verify you and deliver your password, no email needed.</p>
+    <p class="landing-note">Sign-up is verified through Telegram - no email needed.</p>
 </section>
 
-<section class="feature-grid">
-    <div class="feature-card">
-        <div class="feature-icon">🏋️</div>
-        <h3>Personalized Workout Plans</h3>
-        <p>Write and edit your own training program as simple YAML, then follow
-            it day by day with a clean, distraction-free plan view.</p>
+<section class="landing-features">
+    <div class="landing-feature">
+        <span class="landing-icon" aria-hidden="true">🏋️</span>
+        <h3>Today's workout, ready</h3>
+        <p>Your day opens on the right session. Log a set and the rest timer starts on its own.</p>
     </div>
-    <div class="feature-card">
-        <div class="feature-icon">🥗</div>
-        <h3>High-Volume Food Guide</h3>
-        <p>A curated list of filling, low-calorie foods to help you cut weight
-            without feeling like you're starving.</p>
+    <div class="landing-feature">
+        <span class="landing-icon" aria-hidden="true">⌚</span>
+        <h3>Sync from your watch</h3>
+        <p>Import workouts, walks and weight from Apple Health or Google - no extra app.</p>
     </div>
-    <div class="feature-card">
-        <div class="feature-icon">📈</div>
-        <h3>Body Metric Tracking</h3>
-        <p>Log your weight and any custom metrics you care about, then watch
-            your trends unfold on interactive charts.</p>
-    </div>
-    <div class="feature-card">
-        <div class="feature-icon">🔥</div>
-        <h3>Attendance &amp; Streaks</h3>
-        <p>Keep the momentum going - track gym attendance streaks and see your
-            progress status at a glance.</p>
+    <div class="landing-feature">
+        <span class="landing-icon" aria-hidden="true">📈</span>
+        <h3>Progress you can see</h3>
+        <p>Streaks, weekly goals and weight trends, plus suggestions for when to add load.</p>
     </div>
 </section>
-
-<div class="footer">
-    <h2 style="margin-top:0;">Ready to start tracking?</h2>
-    <p class="muted" style="margin-bottom:16px;">Create your free account in seconds with Telegram - no email or password to remember upfront.</p>
-    <a href="{{ url_for('registration.register') }}">Create Account</a>
-</div>
 {% endblock %}

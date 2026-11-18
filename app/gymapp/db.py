@@ -723,3 +723,23 @@ def latest_value_per_metric(user_id):
         (user_id,),
     ).fetchall()
     return rows
+
+
+# ---- date lookups used by the health-data importer ------------------------
+
+def visit_dates(user_id):
+    rows = get_db().execute("SELECT visit_date FROM gym_visits WHERE user_id = ?", (user_id,)).fetchall()
+    return [r["visit_date"] for r in rows]
+
+
+def walk_dates(user_id):
+    rows = get_db().execute("SELECT walk_date FROM walks WHERE user_id = ?", (user_id,)).fetchall()
+    return [r["walk_date"] for r in rows]
+
+
+def log_dates(user_id, metric_key):
+    rows = get_db().execute(
+        "SELECT DISTINCT log_date FROM body_logs WHERE user_id = ? AND metric_key = ?",
+        (user_id, metric_key),
+    ).fetchall()
+    return [r["log_date"] for r in rows]

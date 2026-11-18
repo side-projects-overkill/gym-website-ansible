@@ -183,13 +183,14 @@ ansible-playbook playbooks/deploy-quick.yml
 - An **admin panel** (`/admin`) to edit that YAML, protected by a login.
 - A **body-metric tracker** (weight, height, body fat, or any custom metric you define) backed by SQLite, with history, a trend chart, and CSV export.
 
-It runs behind the existing Apache server via `mod_proxy` (gunicorn listens on `127.0.0.1:8099`), so no new ports need to be opened. Routing:
+It runs behind the existing Apache server via `mod_proxy` (gunicorn on `127.0.0.1:8099`); Apache proxies the whole site to the app except `/readme.html`. No new ports need to be opened.
 
-- `/` and `/guide` - the static workout guide (`website/index.html`), served by Apache. It loads the app's `/static/style.css` and mirrors its nav, so guide and app share one theme.
-- App route prefixes (`/login`, `/dashboard`, `/plan`, `/static`, ...) - proxied to the Flask app. The list lives in `app_route_prefixes` in `playbooks/deploy-app.yml`; add new top-level app routes there.
-- `/session` - tiny public JSON endpoint (`{"logged_in": bool, "username"?}`, `Cache-Control: no-store`) the static guide uses to show the logged-in nav.
+- `/` - landing page for visitors; logged-in members go straight to **Today** (`/dashboard`). The old static guide is merged into Today (`/guide` redirects there): golden rules come from `site.rules` in the workout YAML, and logging an exercise starts an automatic rest timer based on its `rest` value.
+- **Sync from watch** (`/import`, also in the ⚙️ menu) - upload an Apple Health `export.zip`, a Google Takeout zip (Fitbit and/or Google Fit), or `.gpx`/`.tcx` files. You get a preview, then confirm. Walks, strength workouts (as gym check-ins) and weight are added; days you already logged are never changed. The upload is parsed as a stream and discarded, and only a small single-use summary is kept until you confirm.
 
-**Theme:** one shared stylesheet (`app/gymapp/static/style.css`) for app and guide - minimal dark surfaces, a single blue accent, Red Hat Display for headings and Red Hat Text for body copy. Change the tokens in `:root` to retheme everything.
+**Theme:** one stylesheet (`app/gymapp/static/style.css`) - minimal dark surfaces, a single blue accent, Red Hat Display for headings and Red Hat Text for body copy. Change the tokens in `:root` to retheme everything.
+
+> Legacy: the `website/` static pages and the `deploy-local*`/`deploy-website`/`deploy-quick` playbooks predate the app and are no longer served at `/`.
 
 ### Deploy / Update the App
 

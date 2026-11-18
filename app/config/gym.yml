@@ -7,6 +7,11 @@
 site:
   title: "Joint-First Execution Guide"
   subtitle: "5-Day Split - Custom Modded for Maximum Joint Safety"
+  # Shown as "Golden rules" on Today and Plan. Optional.
+  rules:
+    - "The Badminton Veto: no lower-body workouts on heavy court days. On a court day, lift upper body BEFORE playing."
+    - "The Joint Guard: stop at technical failure (1-2 reps in the tank). Never grind reps with broken form."
+    - "The Hydration Protocol: keep salt/lemon hydration going in humid weather to protect the joints."
 
 days:
   - name: "Day 1: Chest & Shoulders"

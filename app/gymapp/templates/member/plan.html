@@ -18,6 +18,10 @@
 </div>
 {% endif %}
 
+{% set rules = site.rules %}
+{% set open_rules = true %}
+{% include "member/_rules_card.html" %}
+
 {% set redirect_to = 'plan' %}
 {% include "member/_workout_accordion.html" %}
 {% endblock %}

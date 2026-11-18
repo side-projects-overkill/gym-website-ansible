@@ -43,6 +43,8 @@
     {% endif %}
 </div>
 
+<p class="sync-line">⌚ {% if last_import %}Last synced {{ last_import }}{% else %}Watch not synced yet{% endif %} · <a href="{{ url_for('importer.upload') }}">Sync from watch</a></p>
+
 {# 3. Four numbers that matter this week. #}
 <div class="stats-grid">
     <div class="card stat-tile">
@@ -94,9 +96,10 @@
 </form>
 {% endif %}
 
-{# 5. Today's workout. #}
+{# 5. Today's workout, with the golden rules as a quiet reminder. #}
 <section id="todays-workout">
     <h2 class="section-title">Workout</h2>
+    {% include "member/_rules_card.html" %}
     {% if days %}
     {% set redirect_to = 'dashboard' %}
     {% include "member/_workout_accordion.html" %}

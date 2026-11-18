@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Review import - Gym Tracker{% endblock %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>Review import</h1>
+        <p class="subtitle">From {{ result.source }}{% if first %} · {{ first }} to {{ last }}{% endif %}</p>
+    </div>
+</header>
+
+<div class="card-grid stats-row">
+    <div class="stat-card"><div class="label">Walks found</div><div class="value">{{ found.walks }}</div></div>
+    <div class="stat-card"><div class="label">Gym sessions</div><div class="value">{{ found.gym }}</div></div>
+    <div class="stat-card"><div class="label">Weight entries</div><div class="value">{{ found.weights }}</div></div>
+</div>
+
+<form method="post" class="card">
+    <h2 class="card-title-plain">What should be added?</h2>
+    <div class="range-list">
+        {% set options = [] %}
+        {% if last_import %}{% set _ = options.append(('new', 'New since last sync (' ~ last_import ~ ')')) %}{% endif %}
+        {% set _ = options.append(('30', 'Last 30 days')) %}
+        {% set _ = options.append(('90', 'Last 90 days')) %}
+        {% set _ = options.append(('all', 'Everything in the file')) %}
+        {% for key, label in options %}
+        {% set c = ranges[key] %}
+        <label class="range-option">
+            <input type="radio" name="range" value="{{ key }}" {% if key == ('new' if last_import else 'all') %}checked{% endif %}>
+            <span class="range-label">{{ label }}</span>
+            <span class="range-counts">{{ c.walks }} walks · {{ c.gym }} gym · {{ c.weights }} weights</span>
+        </label>
+        {% endfor %}
+    </div>
+    <p class="muted small">Counts only include days you haven't logged yet - nothing you entered yourself is changed.</p>
+    {% if result.skipped %}
+    <p class="muted small">Not imported (other activity types):
+        {% for k, n in result.skipped.items() %}{{ k }} × {{ n }}{{ ", " if not loop.last }}{% endfor %}</p>
+    {% endif %}
+    <div class="btn-group">
+        <button class="btn" type="submit">Import</button>
+        <a class="btn btn-secondary" href="{{ url_for('importer.upload') }}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

@@ -44,7 +44,7 @@ def create_app(data_dir=None):
     db_module.init_db(app.config["DB_PATH"])
     app.teardown_appcontext(db_module.close_db)
 
-    from . import attendance, goals, member, public, registration, walking
+    from . import attendance, goals, importer, member, public, registration, walking
 
     app.register_blueprint(public.bp)
     app.register_blueprint(member.bp)
@@ -52,6 +52,9 @@ def create_app(data_dir=None):
     app.register_blueprint(attendance.bp)
     app.register_blueprint(goals.bp)
     app.register_blueprint(walking.bp)
+    app.register_blueprint(importer.bp)
+    # Health exports (Apple's export.zip especially) can be large.
+    app.config.setdefault("MAX_CONTENT_LENGTH", 800 * 1024 * 1024)
 
     # Cache-busting query string for static assets, derived from the newest
     # mtime under static/ (deterministic across all gunicorn workers, unlike

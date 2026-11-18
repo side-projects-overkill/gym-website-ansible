@@ -1,22 +1,13 @@
 # Managed by Ansible (playbooks/deploy-app.yml) - do not edit by hand.
 #
-# Routing model:
-#   - /            -> static site from DocumentRoot (/var/www/html)
-#   - app prefixes -> Gym Tracker Flask app (gunicorn on 127.0.0.1:{{ app_port }})
-#
-# The app lives at the root path internally, so we proxy each of its route
-# prefixes explicitly. When adding a new top-level route to the Flask app,
-# add its prefix to the list below.
+# The Gym Tracker Flask app (gunicorn on 127.0.0.1:{{ app_port }}) serves the
+# whole site, including the landing page at /. Only the deployment docs page
+# and Apache's status page are served by Apache itself.
 
 ProxyPreserveHost On
-ProxyTimeout 60
+ProxyTimeout 180
 
 ProxyPass /server-status !
-
-# Clean URL for the static guide, linked from the app's top nav.
-Alias /guide /var/www/html/index.html
-
-{% for prefix in app_route_prefixes %}
-ProxyPass /{{ prefix }} http://127.0.0.1:{{ app_port }}/{{ prefix }}
-ProxyPassReverse /{{ prefix }} http://127.0.0.1:{{ app_port }}/{{ prefix }}
-{% endfor %}
+ProxyPass /readme.html !
+ProxyPass / http://127.0.0.1:{{ app_port }}/
+ProxyPassReverse / http://127.0.0.1:{{ app_port }}/

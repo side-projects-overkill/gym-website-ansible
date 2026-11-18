@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Sync from your watch - Gym Tracker{% endblock %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>Sync from your watch</h1>
+        <p class="subtitle">
+            Import walks, strength workouts and weight. Days you already logged are kept as they are.
+            {% if last_import %}<br>Last synced {{ last_import }}.{% endif %}
+        </p>
+    </div>
+</header>
+
+<form method="post" enctype="multipart/form-data" class="card import-card">
+    <label for="file">Export file</label>
+    <input type="file" id="file" name="file" accept=".zip,.xml,.tcx,.gpx" required>
+    <details class="collapsible import-options">
+        <summary>Options</summary>
+        <div class="collapsible-body">
+            <label for="weight_unit">Weight unit in a Fitbit export</label>
+            <select id="weight_unit" name="weight_unit">
+                <option value="kg">Kilograms</option>
+                <option value="lb">Pounds</option>
+            </select>
+        </div>
+    </details>
+    <button class="btn" type="submit" id="importBtn">Upload &amp; preview</button>
+    <p class="muted small">Large Apple exports can take a minute to read. Nothing is imported until you confirm, and the uploaded file isn't kept.</p>
+</form>
+
+<h2 class="section-title">How to export</h2>
+<div class="howto-grid">
+    <div class="card howto">
+        <h3>⌚ Apple Health · Apple Watch / iPhone</h3>
+        <ol>
+            <li>Open the <strong>Health</strong> app.</li>
+            <li>Tap your <strong>profile picture</strong> (top right).</li>
+            <li>Tap <strong>Export All Health Data</strong> → Export.</li>
+            <li>Save <code>export.zip</code> to Files, then upload it here.</li>
+        </ol>
+    </div>
+    <div class="card howto">
+        <h3>⌚ Google · Pixel Watch / Fitbit</h3>
+        <ol>
+            <li>Go to <strong>takeout.google.com</strong>.</li>
+            <li>Deselect all, then tick <strong>Fitbit</strong> (and/or <strong>Fit</strong>).</li>
+            <li>Create the export and download the <code>.zip</code>.</li>
+            <li>Upload the zip here as-is.</li>
+        </ol>
+    </div>
+    <div class="card howto">
+        <h3>🧭 Any watch</h3>
+        <ol>
+            <li>In your watch or Strava app, open a workout.</li>
+            <li>Choose <strong>Export</strong> as <strong>GPX</strong> or <strong>TCX</strong>.</li>
+            <li>Upload the file (or a zip of several).</li>
+        </ol>
+    </div>
+</div>
+<script>
+document.querySelector('.import-card').addEventListener('submit', function () {
+    var b = document.getElementById('importBtn'); b.disabled = true; b.textContent = 'Reading file…';
+});
+</script>
+{% endblock %}

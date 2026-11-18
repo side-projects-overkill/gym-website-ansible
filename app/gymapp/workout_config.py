@@ -1,4 +1,6 @@
 """Load/save the YAML file that drives the public workout page."""
+import re
+
 import yaml
 
 from . import localtime, yaml_store
@@ -17,6 +19,7 @@ def load_config(config_path):
     data.setdefault("site", {})
     data["site"].setdefault("title", "Gym Tracker")
     data["site"].setdefault("subtitle", "")
+    data["site"].setdefault("rules", [])
     data.setdefault("days", [])
     return data
 
@@ -33,6 +36,12 @@ def validate(raw_text):
         raise ConfigError("Config cannot be empty.")
     if not isinstance(data, dict):
         raise ConfigError("Top-level YAML must be a mapping (site/days).")
+    site = data.get("site") or {}
+    if not isinstance(site, dict):
+        raise ConfigError("'site' must be a mapping.")
+    rules = site.get("rules", [])
+    if not isinstance(rules, list) or not all(isinstance(r, str) for r in rules):
+        raise ConfigError("'site.rules' must be a list of text lines.")
     if "days" in data and not isinstance(data["days"], list):
         raise ConfigError("'days' must be a list.")
     for day in data.get("days", []):
@@ -65,3 +74,25 @@ def pick_today_index(days):
     if not days:
         return None
     return localtime.today().weekday() % len(days)
+
+
+_REST_MINSEC = re.compile(r"^\s*(\d+):(\d{1,2})\s*$")
+_REST_NUM_UNIT = re.compile(r"(\d+(?:\.\d+)?)\s*(s|sec|secs|seconds?|m|min|mins|minutes?)?\b", re.I)
+
+
+def parse_rest_seconds(rest):
+    """Turn a free-text rest like "90s", "2 min", "60-90s" or "1:30" into
+    seconds for the auto rest timer. Ranges use the upper bound. Returns
+    None when there's no number to work with ("as needed", "")."""
+    if not rest or not isinstance(rest, str):
+        return None
+    m = _REST_MINSEC.match(rest)
+    if m:
+        return int(m.group(1)) * 60 + int(m.group(2))
+    matches = _REST_NUM_UNIT.findall(rest)
+    if not matches:
+        return None
+    unit = next((u for _, u in reversed(matches) if u), "s").lower()
+    value = float(matches[-1][0])
+    seconds = value * 60 if unit.startswith("m") else value
+    return int(round(seconds)) or None

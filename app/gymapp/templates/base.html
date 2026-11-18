@@ -18,7 +18,6 @@
                 {% if session.get('user_id') %}
                 {% set ep = request.endpoint %}
                 <div class="topnav-links-primary">
-                    <a href="/guide">Guide</a>
                     <a href="{{ url_for('member.dashboard') }}" class="{{ 'active' if ep == 'member.dashboard' }}">Today</a>
                     <a href="{{ url_for('member.plan') }}" class="{{ 'active' if ep == 'member.plan' }}">Plan</a>
                     <a href="{{ url_for('member.tracker') }}" class="{{ 'active' if ep == 'member.tracker' }}">Progress</a>
@@ -34,7 +33,8 @@
                         <a href="{{ url_for('member.config_editor') }}">Edit workout program</a>
                         <a href="{{ url_for('member.foods_editor') }}">Edit food guide</a>
                         <a href="{{ url_for('member.metrics') }}">Metric types</a>
-                        <span class="nav-menu-heading">Export</span>
+                        <span class="nav-menu-heading">Data</span>
+                        <a href="{{ url_for('importer.upload') }}">Sync from watch</a>
                         <a href="{{ url_for('member.export_logs_csv') }}">All logs (CSV)</a>
                         <a href="{{ url_for('member.export_ai_markdown') }}">For AI (Markdown)</a>
                         <a href="{{ url_for('member.export_ai_json') }}">For AI (JSON)</a>
@@ -45,7 +45,6 @@
                 </details>
                 {% else %}
                 <div class="topnav-links-primary">
-                    <a href="/guide">Guide</a>
                     <a href="{{ url_for('member.login') }}" class="{{ 'active' if request.endpoint == 'member.login' }}">Login</a>
                     <a href="{{ url_for('registration.register') }}" class="{{ 'active' if request.endpoint == 'registration.register' }}">Register</a>
                 </div>

@@ -52,7 +52,7 @@
                             <span class="muted small">Not logged yet</span>
                             {% endif %}
                         </div>
-                        <form method="post" action="{{ url_for('member.log_exercise') }}" class="exercise-log-form">
+                        <form method="post" action="{{ url_for('member.log_exercise') }}" class="exercise-log-form"{% set _rest = ex.rest|rest_seconds %}{% if _rest %} data-rest-seconds="{{ _rest }}"{% endif %}>
                             <input type="hidden" name="exercise_name" value="{{ ex.name }}">
                             <input type="hidden" name="sets_reps" value="{{ ex.sets_reps or '' }}">
                             <input type="hidden" name="redirect_to" value="{{ _redirect_to }}">

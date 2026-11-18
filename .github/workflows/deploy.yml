@@ -46,13 +46,6 @@ jobs:
             -c local \
             playbooks/deploy-app.yml
 
-      - name: Deploy static homepage
-        run: |
-          sudo /usr/bin/ansible-playbook \
-            -i inventory.yml \
-            -c local \
-            playbooks/deploy-local.yml
-
       - name: Verify the site is up
         run: |
           curl -fsS -o /dev/null http://127.0.0.1/login

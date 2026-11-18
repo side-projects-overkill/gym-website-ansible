@@ -1,0 +1,10 @@
+{# Golden rules from the workout config (site.rules). Collapsed by default
+   after the first look so they stay a reminder, not clutter. #}
+{% if rules %}
+<details class="card rules-card collapsible" {% if open_rules %}open{% endif %}>
+    <summary>🛑 Golden rules <span class="muted small">· {{ rules|length }}</span></summary>
+    <ul class="rules-list collapsible-body">
+        {% for rule in rules %}<li>{{ rule }}</li>{% endfor %}
+    </ul>
+</details>
+{% endif %}

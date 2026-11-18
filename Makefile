@@ -52,7 +52,7 @@ deploy-website: ## Deploy the static site from the Git repo (legacy)
 deploy-quick: ## Quick static deploy from Git, no backup (legacy)
 	$(ANSIBLE) playbooks/deploy-quick.yml $(EXTRA)
 
-deploy-local: ## Deploy local website/index.html with backup (legacy)
+deploy-local: ## (legacy) old static page deploy - the site is now fully served by the app
 	$(ANSIBLE) playbooks/deploy-local.yml $(EXTRA)
 
 # ---- backup / recovery -----------------------------------------------------

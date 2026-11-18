@@ -138,10 +138,12 @@ def dashboard():
     plan_days = []
     today_index = None
     todays_workout = None
+    rules = []
     if config_exists:
         paths.ensure_user_files(user_id)
         plan_config = workout_config.load_config(paths.user_config_path(user_id))
         plan_days = plan_config["days"]
+        rules = plan_config["site"]["rules"]
         today_index = workout_config.pick_today_index(plan_days)
         progressive_load.annotate_days(plan_days, user_id, db)
         if today_index is not None:
@@ -172,6 +174,8 @@ def dashboard():
         daily_quote=daily_quote,
         coach_insights=coach_insights,
         food_of_day=food_of_day,
+        rules=rules,
+        last_import=db.get_state(f"last_import:{user_id}"),
     )
 
 

@@ -82,6 +82,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                     form.reset();
                     showAjaxNote(form, "Logged!", "success");
+                    const rest = parseInt(form.dataset.restSeconds, 10);
+                    const nameInput = form.querySelector('input[name="exercise_name"]');
+                    if (rest > 0) RestTimer.start(rest, nameInput ? nameInput.value : "");
                 },
                 onError: (message) => showAjaxNote(form, message, "error"),
             }).finally(() => {
@@ -175,3 +178,78 @@ document.addEventListener("click", (event) => {
     if (reps && btn.dataset.reps) reps.value = btn.dataset.reps;
     (reps || weight)?.focus();
 });
+
+
+// ---- Auto rest timer --------------------------------------------------------
+// Starts after an exercise is quick-logged, using that exercise's rest time
+// (data-rest-seconds on the form, parsed server-side from the plan YAML).
+const RestTimer = (() => {
+    let bar, timeEl, labelEl, pauseBtn, doneBtn, tid = null, remaining = 0, paused = false;
+
+    const fmt = (s) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, "0")}`;
+
+    function build() {
+        bar = document.createElement("div");
+        bar.className = "timer-bar";
+        bar.setAttribute("role", "timer");
+        bar.innerHTML =
+            '<span class="timer-time">0:00</span>' +
+            '<span class="timer-label"></span>' +
+            '<span class="timer-actions">' +
+            '<button type="button" class="btn btn-sm btn-secondary" data-act="pause">Pause</button>' +
+            '<button type="button" class="btn btn-sm btn-secondary" data-act="add">+30s</button>' +
+            '<button type="button" class="btn btn-sm" data-act="done">Done</button></span>';
+        document.body.appendChild(bar);
+        timeEl = bar.querySelector(".timer-time");
+        labelEl = bar.querySelector(".timer-label");
+        pauseBtn = bar.querySelector('[data-act="pause"]');
+        doneBtn = bar.querySelector('[data-act="done"]');
+        pauseBtn.addEventListener("click", () => { paused = !paused; pauseBtn.textContent = paused ? "Resume" : "Pause"; });
+        bar.querySelector('[data-act="add"]').addEventListener("click", () => { remaining += 30; timeEl.textContent = fmt(remaining); });
+        doneBtn.addEventListener("click", stop);
+    }
+
+    function beep() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            [0, 0.25, 0.5].forEach((t0) => {
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+                const t = ctx.currentTime + t0;
+                g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+                o.start(t); o.stop(t + 0.2);
+            });
+        } catch (e) { /* audio unavailable */ }
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    }
+
+    function stop() {
+        clearInterval(tid);
+        if (bar) bar.classList.remove("active", "done");
+    }
+
+    function start(seconds, name) {
+        if (!bar) build();
+        clearInterval(tid);
+        remaining = seconds; paused = false;
+        pauseBtn.textContent = "Pause"; doneBtn.textContent = "Done";
+        labelEl.textContent = name ? `Rest · ${name}` : "Rest";
+        timeEl.textContent = fmt(remaining);
+        bar.classList.add("active"); bar.classList.remove("done");
+        tid = setInterval(() => {
+            if (paused) return;
+            remaining -= 1;
+            timeEl.textContent = fmt(remaining);
+            if (remaining <= 0) {
+                clearInterval(tid);
+                beep();
+                bar.classList.add("done");
+                labelEl.textContent = "Rest over - next set";
+                doneBtn.textContent = "Dismiss";
+            }
+        }, 1000);
+    }
+
+    return { start, stop };
+})();
+window.RestTimer = RestTimer;
