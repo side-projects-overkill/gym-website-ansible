@@ -1,0 +1,41 @@
+---
+description: Keep README, docs/, and Makefile help in sync with changes
+alwaysApply: true
+---
+
+# Documentation Must Be Updated With Code
+
+Docs are part of the change, not a follow-up. If behavior, commands, or
+infrastructure change, update the docs in the same commit.
+
+## What to update
+
+- **New/changed command or workflow?** Update `README.md` and the relevant
+  `make` target help text in `Makefile` (targets are thin wrappers - the help
+  output is the user-facing cheat sheet).
+- **New playbook or playbook task?** Update `README.md` deployment docs and,
+  if the task is user-visible, `docs/`.
+- **New/changed app feature?** Update `README.md` feature list and
+  `docs/` where behavior is described.
+- **CI/workflow change?** Update `.github/workflows/` docs references in
+  `README.md` (badges, pipeline description).
+- **Config/inventory vars added?** Document them in `inventory.yml` comments
+  and `README.md` configuration section.
+
+## Rules
+
+- Stale docs are a bug: if you find documentation that no longer matches
+  reality, fix it in the same commit or note it explicitly in the summary.
+- Prefer concrete, copy-pasteable commands over prose descriptions.
+- Every public-facing page (`website/*.html`) is self-contained static HTML -
+  no build step; note this in docs rather than introducing tooling.
+- The deploy flow is: tests (GitHub-hosted) then Ansible playbooks via the
+  self-hosted runner (`-c local`). Keep diagrams/notes in `docs/` aligned
+  with this architecture when it changes.
+
+## Checklist before finishing
+
+- [ ] README.md reflects new/changed commands and features
+- [ ] Makefile help text is accurate
+- [ ] New inventory vars are commented
+- [ ] docs/ entries updated if architecture changed

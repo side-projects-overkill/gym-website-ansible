@@ -1,0 +1,32 @@
+---
+description: TDD is the default workflow for all Gym Tracker code changes
+alwaysApply: true
+---
+
+# TDD By Default
+
+Test-first is the default for any change to `app/` (Flask app, Python). Do not write
+implementation code without a failing test that justifies it.
+
+## Workflow
+
+1. **Red**: write a failing test in `app/tests/` that captures the new behavior or bug.
+2. **Green**: write the minimal code in `app/gymapp/` to make it pass.
+3. **Refactor**: clean up while keeping the suite green.
+4. Run the suite before declaring done: `./scripts/run-python-tests.sh` (or `make test`).
+
+## Rules
+
+- Bug fixes start with a regression test that reproduces the bug.
+- New features start with tests describing the expected behavior.
+- Never delete or weaken a test to make code pass; if a test is wrong, explain why and fix it.
+- Tests must not require the server, network, or real credentials - use fixtures/mocks
+  (see `app/tests/conftest.py`).
+- Ansible playbooks are verified with `make ansible-check` (syntax) and, where
+  possible, idempotent re-run behavior rather than unit tests.
+
+## CI Contract
+
+`.github/workflows/tests.yml` runs the full suite on GitHub-hosted runners and
+`deploy.yml` gates the self-hosted deploy on tests passing. Never bypass or mark
+the tests job as non-blocking.

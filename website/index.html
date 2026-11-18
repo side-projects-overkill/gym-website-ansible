@@ -1,544 +1,888 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Joint-First Execution Guide</title>
-    <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>Joint-First Execution Guide</title>
+<style>
+@layer reset, tokens, base, components;
+
+/* ---- tokens: single source of truth, dual theme ------------------------ */
+@layer tokens {
+    :root {
+        /* Brand: energetic lime accent on near-black slate. */
+        --accent: oklch(84% 0.19 128);
+        --accent-strong: oklch(76% 0.19 128);
+        --danger: oklch(64% 0.21 25);
+        --info: oklch(72% 0.13 235);
+
+        --bg: oklch(17% 0.01 260);
+        --bg-raised: oklch(21% 0.012 260);
+        --surface: oklch(25% 0.014 260);
+        --text-main: oklch(95% 0.005 260);
+        --text-muted: oklch(70% 0.012 260);
+        --border: oklch(32% 0.012 260);
+        --border-light: oklch(28% 0.012 260);
+
+        --shadow-card: 0 4px 16px oklch(0% 0 0 / 0.35);
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            Helvetica, Arial, sans-serif;
+    }
+
+    @media (prefers-color-scheme: light) {
         :root {
-            --bg-color: #ffffff;
-            --card-bg: #f8f9fa;
-            --text-main: #212529;
-            --text-muted: #6c757d;
-            --accent: #0d6efd;
-            --danger: #dc3545;
-            --success: #198754;
-            --warning: #fd7e14;
-            --border: #dee2e6;
-            --border-light: #f1f3f4;
-        }
+            --accent: oklch(58% 0.16 145);
+            --accent-strong: oklch(52% 0.16 145);
+            --danger: oklch(52% 0.19 25);
+            --info: oklch(48% 0.12 240);
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+            --bg: oklch(97% 0.004 260);
+            --bg-raised: oklch(100% 0 0);
+            --surface: oklch(95% 0.006 260);
+            --text-main: oklch(24% 0.015 260);
+            --text-muted: oklch(48% 0.015 260);
+            --border: oklch(87% 0.008 260);
+            --border-light: oklch(91% 0.008 260);
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-            padding: 16px;
+            --shadow-card: 0 2px 10px oklch(0% 0 0 / 0.08);
         }
+    }
+}
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+/* ---- reset --------------------------------------------------------------- */
+@layer reset {
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+}
+
+/* ---- base ---------------------------------------------------------------- */
+@layer base {
+    html { scrollbar-gutter: stable; }
+    body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text-main);
+        line-height: 1.6;
+        padding-inline: 16px;
+        padding-block: 0 64px;
+    }
+
+    :is(a, button, summary, input):focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            transition: none !important;
+            animation: none !important;
+            scroll-behavior: auto !important;
         }
+    }
+}
 
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-            text-align: center;
-            color: var(--text-main);
-            font-weight: 600;
-        }
+/* ---- components ---------------------------------------------------------- */
+@layer components {
+    .container { max-width: 860px; margin-inline: auto; }
 
-        p.subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            margin-bottom: 24px;
-            font-size: 0.9rem;
-        }
+    /* Hero */
+    .hero {
+        padding-block: 48px 32px;
+        text-align: center;
+    }
+    .hero .kicker {
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+    }
+    .hero h1 {
+        font-size: clamp(1.7rem, 5vw, 2.6rem);
+        font-weight: 800;
+        line-height: 1.15;
+        margin-block: 8px 12px;
+        letter-spacing: -0.02em;
+    }
+    .hero .subtitle {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        max-width: 46ch;
+        margin-inline: auto;
+    }
 
-        /* Golden Rules Section */
-        .rules-card {
-            background-color: #fff5f5;
-            border-left: 4px solid var(--danger);
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 32px;
-            border: 1px solid #fed7d7;
-        }
+    /* Sticky day nav */
+    .day-nav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding-block: 12px;
+        background: color-mix(in oklab, var(--bg) 88%, transparent);
+        backdrop-filter: blur(10px);
+        border-block-end: 1px solid var(--border-light);
+        margin-block-end: 28px;
+    }
+    .day-nav a {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    .day-nav a:hover { color: var(--text-main); border-color: var(--text-muted); }
+    .day-nav a.today {
+        color: var(--bg);
+        background: var(--accent);
+        border-color: var(--accent);
+    }
+    .day-nav a.done-week {
+        border-color: color-mix(in oklab, var(--accent) 55%, var(--border));
+        color: var(--accent);
+    }
 
-        .rules-card h2 {
-            color: var(--danger);
-            font-size: 1.2rem;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-        }
+    /* Golden rules */
+    .rules-card {
+        background:
+            linear-gradient(
+                135deg,
+                color-mix(in oklab, var(--danger) 12%, var(--bg-raised)),
+                var(--bg-raised));
+        border: 1px solid color-mix(in oklab, var(--danger) 35%, var(--border));
+        border-radius: var(--radius-lg);
+        padding: 22px;
+        margin-block-end: 32px;
+    }
+    .rules-card h2 {
+        color: var(--danger);
+        font-size: 1.05rem;
+        margin-block-end: 12px;
+        font-weight: 700;
+    }
+    .rules-card ul { padding-left: 20px; }
+    .rules-card li {
+        margin-block-end: 8px;
+        font-size: 0.92rem;
+    }
 
-        .rules-card ul {
-            padding-left: 20px;
-        }
+    /* Day cards */
+    details.day-card {
+        background: var(--bg-raised);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        margin-block-end: 18px;
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+    }
+    details.day-card[open] { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+    details.day-card:has(.badge-today) {
+        border-color: color-mix(in oklab, var(--accent) 65%, var(--border));
+    }
 
-        .rules-card li {
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
+    .day-card summary {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 18px 20px;
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+        transition: background 0.15s ease;
+    }
+    .day-card summary::-webkit-details-marker { display: none; }
+    .day-card summary:hover { background: var(--surface); }
 
-        /* Day Cards */
-        .day-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    .day-badge {
+        inline-size: 46px;
+        block-size: 46px;
+        flex: none;
+        display: grid;
+        place-items: center;
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        font-weight: 800;
+        font-size: 0.95rem;
+        color: var(--text-muted);
+    }
+    details.day-card:has(.badge-today) .day-badge {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--bg);
+    }
+
+    .day-meta { flex: 1; min-inline-size: 0; }
+    .day-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .badge-today {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--bg);
+        background: var(--accent);
+        padding: 2px 8px;
+        border-radius: 999px;
+    }
+    .day-focus {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 500;
+    }
+    .day-progress {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--accent);
+        white-space: nowrap;
+    }
+    .day-progress.complete { color: var(--accent-strong); }
+    .chevron {
+        flex: none;
+        color: var(--text-muted);
+        transition: rotate 0.2s ease;
+    }
+    details[open] .chevron { rotate: 180deg; }
+
+    .day-body { padding: 0 20px 20px; }
+
+    /* Exercise tables */
+    .table-wrapper {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow-x: auto;
+        background: var(--bg-raised);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td {
+        padding: 12px;
+        text-align: start;
+        border-block-end: 1px solid var(--border-light);
+        vertical-align: top;
+    }
+    thead th {
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        background: var(--surface);
+        position: sticky;
+        top: 0;
+    }
+    tbody tr:last-child td { border-block-end: none; }
+    tbody tr:has(:checked) { opacity: 0.45; }
+    tbody tr:has(:checked) .exercise-name { text-decoration: line-through; }
+
+    td.exercise-name { font-weight: 600; }
+    td.sets-reps {
+        white-space: nowrap;
+        color: var(--accent);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+    td.form-focus {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        max-inline-size: 340px;
+    }
+
+    /* Set checkboxes */
+    .set-check {
+        inline-size: 18px;
+        block-size: 18px;
+        accent-color: var(--accent);
+        cursor: pointer;
+    }
+
+    .btn {
+        display: inline-block;
+        background: color-mix(in oklab, var(--accent) 16%, transparent);
+        color: var(--accent);
+        text-decoration: none;
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+    .btn:hover { background: var(--accent); color: var(--bg); }
+
+    /* Rest-day note */
+    .rest-note {
+        text-align: center;
+        color: var(--text-muted);
+        padding: 32px 16px;
+        background: var(--bg-raised);
+        border: 1px dashed var(--border);
+        border-radius: var(--radius-lg);
+        margin-block-end: 18px;
+        font-size: 0.95rem;
+    }
+
+    /* Footer */
+    .footer {
+        text-align: center;
+        margin-block-start: 48px;
+        padding: 24px;
+        background: var(--bg-raised);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+    .footer a {
+        color: var(--accent);
+        text-decoration: none;
+        border: 1px solid color-mix(in oklab, var(--accent) 50%, transparent);
+        padding: 10px 18px;
+        border-radius: 8px;
+        display: inline-block;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+    .footer a:hover { background: var(--accent); color: var(--bg); }
+    .footer .credits {
+        margin-block-start: 14px;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    /* Mobile: table rows become cards */
+    @media (max-width: 640px) {
+        .table-wrapper { border: none; background: transparent; overflow: visible; }
+        table, thead, tbody, tr, td { display: block; }
+        thead { display: none; }
+        tbody tr {
+            background: var(--bg-raised);
             border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-block-end: 10px;
+            padding: 6px 14px;
         }
-
-        .day-header {
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 12px;
-            margin-bottom: 16px;
-        }
-
-        .day-title {
-            font-size: 1.4rem;
-            color: var(--accent);
-            font-weight: 600;
-        }
-
-        .day-focus {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 500;
-        }
-
-        /* Table Styles */
-        .table-wrapper {
-            overflow-x: auto;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        th {
-            background-color: #f8f9fa;
-            color: var(--text-muted);
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.5px;
-        }
-
-        tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-
-        td.exercise-name {
-            font-weight: 600;
-            color: var(--text-main);
-            min-width: 140px;
-        }
-
-        td.sets-reps {
-            white-space: nowrap;
-            color: var(--accent);
-            font-weight: 600;
-        }
-
-        td.form-focus {
-            min-width: 200px;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
-        /* Button Link */
-        .btn {
-            display: inline-block;
-            background-color: var(--accent);
-            color: white;
-            text-decoration: none;
+        tbody tr td {
             border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            white-space: nowrap;
+            padding: 5px 0;
         }
-
-        .btn:hover {
-            background-color: #0b5ed7;
-            transform: translateY(-1px);
-        }
-
-        /* Footer styling */
-        .footer {
-            text-align: center;
-            margin-top: 48px;
-            padding: 20px;
-            background-color: var(--card-bg);
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-
-        .footer a {
-            color: var(--accent);
-            text-decoration: none;
-            border: 1px solid var(--accent);
-            padding: 8px 16px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-            display: inline-block;
-            font-weight: 500;
-        }
-
-        .footer a:hover {
-            background-color: var(--accent);
-            color: white;
-            transform: translateY(-1px);
-        }
-
-        .footer .credits {
-            margin-top: 12px;
+        td.exercise-name { font-size: 1rem; }
+        td.form-focus { max-inline-size: none; }
+        /* label each card cell via data-label */
+        td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
             color: var(--text-muted);
-            font-size: 0.85rem;
         }
-
-        /* Mobile Adjustments */
-        @media (max-width: 600px) {
-            body { padding: 12px; }
-            .day-card { padding: 16px; }
-            th, td { padding: 8px 6px; }
-
-            .table-wrapper {
-                font-size: 0.8rem;
-            }
-
-            .btn {
-                font-size: 0.7rem;
-                padding: 4px 8px;
-            }
+        td.cell-check, td.cell-guide {
+            display: inline-block;
+            margin-block-start: 6px;
         }
-    </style>
+        .day-card summary { padding: 14px 16px; }
+        .day-body { padding: 0 12px 16px; }
+    }
+}
+</style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Joint-First Execution Guide</h1>
-    <p class="subtitle">5-Day Split &bull; Custom Modded for Maximum Joint Safety</p>
+
+    <header class="hero">
+        <p class="kicker">5-Day Split</p>
+        <h1>Joint-First Execution Guide</h1>
+        <p class="subtitle">Custom modded for maximum joint safety. Tap a day, tick your sets as you go.</p>
+    </header>
+
+    <nav class="day-nav" aria-label="Workout days">
+        <a href="#monday" data-day="1">Mon</a>
+        <a href="#tuesday" data-day="2">Tue</a>
+        <a href="#wednesday" data-day="3">Wed</a>
+        <a href="#thursday" data-day="4">Thu</a>
+        <a href="#friday" data-day="5">Fri</a>
+    </nav>
 
     <!-- Golden Rules -->
-    <div class="rules-card">
-        <h2>🛑 The Golden Rules</h2>
+    <section class="rules-card" aria-labelledby="rules-title">
+        <h2 id="rules-title">🛑 The Golden Rules</h2>
         <ul>
-            <li><strong>The Badminton Veto:</strong> Do not perform Lower Body workouts on days with heavy court time. If doing upper body on a court day, lift BEFORE playing.</li>
-            <li><strong>The Joint Guard:</strong> Stop at Technical Failure (1-2 reps left in the tank). Never grind out reps with broken form. Let machines stabilize.</li>
-            <li><strong>The Hydration Protocol:</strong> Maintain salt/lemon hydration continuously due to monsoon humidity to protect synovial joints.</li>
+            <li><strong>The Badminton Veto:</strong> No Lower Body workouts on days with heavy court time. If doing upper body on a court day, lift <em>before</em> playing.</li>
+            <li><strong>The Joint Guard:</strong> Stop at Technical Failure (1-2 reps in the tank). Never grind reps with broken form. Let machines stabilize.</li>
+            <li><strong>The Hydration Protocol:</strong> Continuous salt/lemon hydration in monsoon humidity to protect synovial joints.</li>
         </ul>
-    </div>
+    </section>
 
     <!-- MONDAY -->
-    <div class="day-card">
-        <div class="day-header">
-            <div class="day-focus">Push &bull; Chest, Shoulders, Triceps</div>
-            <h2 class="day-title">Monday</h2>
+    <details class="day-card" id="monday" data-day="1">
+        <summary>
+            <span class="day-badge">Mo</span>
+            <span class="day-meta">
+                <span class="day-title">Monday <span class="badge-today" hidden>Today</span></span>
+                <span class="day-focus">Push &bull; Chest, Shoulders, Triceps</span>
+            </span>
+            <span class="day-progress" data-progress></span>
+            <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="day-body">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Exercise</th>
+                            <th>Sets × Reps</th>
+                            <th>Rest</th>
+                            <th>Form Focus</th>
+                            <th>Done</th>
+                            <th>Guide</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="exercise-name">Flat DB Bench Press</td>
+                            <td class="sets-reps">3 × 8-12</td>
+                            <td>90s</td>
+                            <td class="form-focus">Keep elbows tucked at 45 degrees. Drive through the chest.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="mon-1" aria-label="Flat DB Bench Press done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=flat+dumbbell+bench+press+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Incline DB Press</td>
+                            <td class="sets-reps">3 × 8-12</td>
+                            <td>90s</td>
+                            <td class="form-focus">Low incline (15-30°). Control the descent. Tucked elbows.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="mon-2" aria-label="Incline DB Press done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=incline+dumbbell+bench+press+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Pec Deck Fly</td>
+                            <td class="sets-reps">3 × 10-15</td>
+                            <td>90s</td>
+                            <td class="form-focus">Slight bend in elbows. Squeeze chest hard at center.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="mon-3" aria-label="Pec Deck Fly done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=pec+deck+machine+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">High-Incline DB Press (60°)</td>
+                            <td class="sets-reps">3 × 8-12</td>
+                            <td>90s</td>
+                            <td class="form-focus">Hits front delts. Don't go perfectly vertical to protect capsule.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="mon-4" aria-label="High-Incline DB Press done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=high+incline+dumbbell+shoulder+press+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">DB Lateral Raise</td>
+                            <td class="sets-reps">4 × 12-15</td>
+                            <td>60s</td>
+                            <td class="form-focus">Lift slightly in front of your body (scapular plane).</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="mon-5" aria-label="DB Lateral Raise done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=dumbbell+lateral+raise+scapular+plane+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Tricep Pushdown</td>
+                            <td class="sets-reps">3 × 10-15</td>
+                            <td>60s</td>
+                            <td class="form-focus">Posture upright, shoulders locked down and back.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="mon-6" aria-label="Tricep Pushdown done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=tricep+rope+pushdown+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Exercise</th>
-                        <th>Sets x Reps</th>
-                        <th>Rest</th>
-                        <th>Form Focus</th>
-                        <th>Guide</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="exercise-name">Flat DB Bench Press</td>
-                        <td class="sets-reps">3 x 8-12</td>
-                        <td>90s</td>
-                        <td class="form-focus">Keep elbows tucked at 45 degrees. Drive through the chest.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=flat+dumbbell+bench+press+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Incline DB Press</td>
-                        <td class="sets-reps">3 x 8-12</td>
-                        <td>90s</td>
-                        <td class="form-focus">Low incline (15-30°). Control the descent. Tucked elbows.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=incline+dumbbell+bench+press+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Pec Deck Fly</td>
-                        <td class="sets-reps">3 x 10-15</td>
-                        <td>90s</td>
-                        <td class="form-focus">Keep slight bend in elbows. Squeeze chest hard at center.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=pec+deck+machine+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">High-Incline DB Press (60°)</td>
-                        <td class="sets-reps">3 x 8-12</td>
-                        <td>90s</td>
-                        <td class="form-focus">Hits front delts. Don't go perfectly vertical to protect capsule.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=high+incline+dumbbell+shoulder+press+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">DB Lateral Raise</td>
-                        <td class="sets-reps">4 x 12-15</td>
-                        <td>60s</td>
-                        <td class="form-focus">Lift slightly in front of your body (scapular plane).</td>
-                        <td><a href="https://www.youtube.com/results?search_query=dumbbell+lateral+raise+scapular+plane+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Tricep Pushdown</td>
-                        <td class="sets-reps">3 x 10-15</td>
-                        <td>60s</td>
-                        <td class="form-focus">Keep posture upright, shoulders locked down and back.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=tricep+rope+pushdown+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    </details>
 
     <!-- TUESDAY -->
-    <div class="day-card">
-        <div class="day-header">
-            <div class="day-focus">Lower A &bull; Quad Focus & Knee Resilience</div>
-            <h2 class="day-title">Tuesday</h2>
+    <details class="day-card" id="tuesday" data-day="2">
+        <summary>
+            <span class="day-badge">Tu</span>
+            <span class="day-meta">
+                <span class="day-title">Tuesday <span class="badge-today" hidden>Today</span></span>
+                <span class="day-focus">Lower A &bull; Quad Focus & Knee Resilience</span>
+            </span>
+            <span class="day-progress" data-progress></span>
+            <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="day-body">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Exercise</th>
+                            <th>Sets × Reps</th>
+                            <th>Rest</th>
+                            <th>Form Focus</th>
+                            <th>Done</th>
+                            <th>Guide</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="exercise-name">Goblet Squat</td>
+                            <td class="sets-reps">3 × 10-12</td>
+                            <td>120s</td>
+                            <td class="form-focus">DB at chest forces an upright torso and protects lumbar spine.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="tue-1" aria-label="Goblet Squat done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=goblet+squat+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Leg Extensions</td>
+                            <td class="sets-reps">3 × 12-15</td>
+                            <td>90s</td>
+                            <td class="form-focus">Controlled squeeze at top. No kicking or momentum.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="tue-2" aria-label="Leg Extensions done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=leg+extension+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Supported Reverse Lunge</td>
+                            <td class="sets-reps">3 × 10/leg</td>
+                            <td>90s</td>
+                            <td class="form-focus">Hold a rack for balance. Step backward to protect knees. Zero back strain.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="tue-3" aria-label="Supported Reverse Lunge done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=supported+reverse+lunge+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Heavy Slow Calf Raise</td>
+                            <td class="sets-reps">3 × 10-12</td>
+                            <td>60s</td>
+                            <td class="form-focus">3s down, 1s pause at bottom stretch for Achilles health.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="tue-4" aria-label="Heavy Slow Calf Raise done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=heavy+slow+resistance+calf+raise" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Hanging Knee Raises</td>
+                            <td class="sets-reps">3 × 10-15</td>
+                            <td>60s</td>
+                            <td class="form-focus">Hang from bar, pull knees up. Decompresses lumbar spine.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="tue-5" aria-label="Hanging Knee Raises done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=hanging+knee+raise+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Exercise</th>
-                        <th>Sets x Reps</th>
-                        <th>Rest</th>
-                        <th>Form Focus</th>
-                        <th>Guide</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="exercise-name">Goblet Squat</td>
-                        <td class="sets-reps">3 x 10-12</td>
-                        <td>120s</td>
-                        <td class="form-focus">DB at chest forces an upright torso & protects lumbar spine.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=goblet+squat+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Leg Extensions</td>
-                        <td class="sets-reps">3 x 12-15</td>
-                        <td>90s</td>
-                        <td class="form-focus">Controlled squeeze at top. Do not kick or use momentum.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=leg+extension+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Supported Reverse Lunge</td>
-                        <td class="sets-reps">3 x 10/leg</td>
-                        <td>90s</td>
-                        <td class="form-focus">Hold a rack for balance. Step backward to protect knees. Zero back strain.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=supported+reverse+lunge+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Heavy Slow Calf Raise</td>
-                        <td class="sets-reps">3 x 10-12</td>
-                        <td>60s</td>
-                        <td class="form-focus">3s down, 1s pause at bottom stretch for Achilles health.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=heavy+slow+resistance+calf+raise" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Hanging Knee Raises</td>
-                        <td class="sets-reps">3 x 10-15</td>
-                        <td>60s</td>
-                        <td class="form-focus">Hang from bar, pull knees up. Decompresses lumbar spine.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=hanging+knee+raise+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    </details>
 
     <!-- WEDNESDAY -->
-    <div class="day-card">
-        <div class="day-header">
-            <div class="day-focus">Pull &bull; Back & Biceps</div>
-            <h2 class="day-title">Wednesday</h2>
+    <details class="day-card" id="wednesday" data-day="3">
+        <summary>
+            <span class="day-badge">We</span>
+            <span class="day-meta">
+                <span class="day-title">Wednesday <span class="badge-today" hidden>Today</span></span>
+                <span class="day-focus">Pull &bull; Back & Biceps</span>
+            </span>
+            <span class="day-progress" data-progress></span>
+            <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="day-body">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Exercise</th>
+                            <th>Sets × Reps</th>
+                            <th>Rest</th>
+                            <th>Form Focus</th>
+                            <th>Done</th>
+                            <th>Guide</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="exercise-name">Half-Kneeling Cable Row</td>
+                            <td class="sets-reps">3 × 8-12/arm</td>
+                            <td>90s</td>
+                            <td class="form-focus">One knee on the floor locks your pelvis. Impossible to cheat with lower back.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="wed-1" aria-label="Half-Kneeling Cable Row done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=half+kneeling+single+arm+cable+row+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Lat Pulldown</td>
+                            <td class="sets-reps">3 × 10-15</td>
+                            <td>90s</td>
+                            <td class="form-focus">Neutral grip (palms facing). Pull strictly to collarbone.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="wed-2" aria-label="Lat Pulldown done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=neutral+grip+lat+pulldown+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Seated Cable Row</td>
+                            <td class="sets-reps">3 × 10-15</td>
+                            <td>90s</td>
+                            <td class="form-focus">Sit perfectly tall. Don't let the weight pull you forward.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="wed-3" aria-label="Seated Cable Row done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=seated+cable+row+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">DB Shrugs</td>
+                            <td class="sets-reps">3 × 12-15</td>
+                            <td>60s</td>
+                            <td class="form-focus">Pull shoulders straight up toward ears, control descent.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="wed-4" aria-label="DB Shrugs done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=dumbbell+shrugs+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Incline DB Curl</td>
+                            <td class="sets-reps">3 × 10-12</td>
+                            <td>60s</td>
+                            <td class="form-focus">Sit on incline bench, let arms hang down for deep stretch.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="wed-5" aria-label="Incline DB Curl done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=incline+dumbbell+curl+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Hammer Curls</td>
+                            <td class="sets-reps">3 × 10-15</td>
+                            <td>60s</td>
+                            <td class="form-focus">Elbows pinned to your sides. No swinging the torso.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="wed-6" aria-label="Hammer Curls done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=dumbbell+hammer+curl+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Exercise</th>
-                        <th>Sets x Reps</th>
-                        <th>Rest</th>
-                        <th>Form Focus</th>
-                        <th>Guide</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="exercise-name">Half-Kneeling Cable Row</td>
-                        <td class="sets-reps">3 x 8-12/arm</td>
-                        <td>90s</td>
-                        <td class="form-focus">One knee on the floor locks your pelvis. Impossible to cheat with lower back.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=half+kneeling+single+arm+cable+row+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Lat Pulldown</td>
-                        <td class="sets-reps">3 x 10-15</td>
-                        <td>90s</td>
-                        <td class="form-focus">Neutral grip (palms facing). Pull strictly to collarbone.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=neutral+grip+lat+pulldown+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Seated Cable Row</td>
-                        <td class="sets-reps">3 x 10-15</td>
-                        <td>90s</td>
-                        <td class="form-focus">Sit perfectly tall. Do not let weight pull you forward.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=seated+cable+row+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">DB Shrugs</td>
-                        <td class="sets-reps">3 x 12-15</td>
-                        <td>60s</td>
-                        <td class="form-focus">Pull shoulders straight up toward ears, control descent.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=dumbbell+shrugs+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Incline DB Curl</td>
-                        <td class="sets-reps">3 x 10-12</td>
-                        <td>60s</td>
-                        <td class="form-focus">Sit on incline bench, let arms hang down for deep stretch.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=incline+dumbbell+curl+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Hammer Curls</td>
-                        <td class="sets-reps">3 x 10-15</td>
-                        <td>60s</td>
-                        <td class="form-focus">Elbows pinned to your sides. No swinging the torso.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=dumbbell+hammer+curl+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    </details>
 
     <!-- THURSDAY -->
-    <div class="day-card">
-        <div class="day-header">
-            <div class="day-focus">Lower B &bull; Hamstrings, Glutes & Core</div>
-            <h2 class="day-title">Thursday</h2>
+    <details class="day-card" id="thursday" data-day="4">
+        <summary>
+            <span class="day-badge">Th</span>
+            <span class="day-meta">
+                <span class="day-title">Thursday <span class="badge-today" hidden>Today</span></span>
+                <span class="day-focus">Lower B &bull; Hamstrings, Glutes & Core</span>
+            </span>
+            <span class="day-progress" data-progress></span>
+            <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="day-body">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Exercise</th>
+                            <th>Sets × Reps</th>
+                            <th>Rest</th>
+                            <th>Form Focus</th>
+                            <th>Done</th>
+                            <th>Guide</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="exercise-name">Seated Leg Curls</td>
+                            <td class="sets-reps">3 × 10-15</td>
+                            <td>90s</td>
+                            <td class="form-focus">Lock torso into the chair. Deeper stretch, zero back pain.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="thu-1" aria-label="Seated Leg Curls done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=seated+leg+curl+machine+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">DB Glute Bridge</td>
+                            <td class="sets-reps">3 × 10-15</td>
+                            <td>90s</td>
+                            <td class="form-focus">DB across hips. Easy solo setup. Don't over-arch back.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="thu-2" aria-label="DB Glute Bridge done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=dumbbell+glute+bridge+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Pallof Press</td>
+                            <td class="sets-reps">3 × 10/side</td>
+                            <td>60s</td>
+                            <td class="form-focus">Anti-rotation core work. Resist the cable twisting your spine.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="thu-3" aria-label="Pallof Press done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=pallof+press+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Exercise</th>
-                        <th>Sets x Reps</th>
-                        <th>Rest</th>
-                        <th>Form Focus</th>
-                        <th>Guide</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="exercise-name">Seated Leg Curls</td>
-                        <td class="sets-reps">3 x 10-15</td>
-                        <td>90s</td>
-                        <td class="form-focus">Lock torso into the chair. Deeper stretch, zero back pain.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=seated+leg+curl+machine+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">DB Glute Bridge</td>
-                        <td class="sets-reps">3 x 10-15</td>
-                        <td>90s</td>
-                        <td class="form-focus">DB across hips. Easy solo setup. Don't over-arch back.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=dumbbell+glute+bridge+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Pallof Press</td>
-                        <td class="sets-reps">3 x 10/side</td>
-                        <td>60s</td>
-                        <td class="form-focus">Anti-rotation core work. Resist the cable twisting your spine.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=pallof+press+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    </details>
 
     <!-- FRIDAY -->
-    <div class="day-card">
-        <div class="day-header">
-            <div class="day-focus">Accessory &bull; Prehab, Arms & Core</div>
-            <h2 class="day-title">Friday</h2>
+    <details class="day-card" id="friday" data-day="5">
+        <summary>
+            <span class="day-badge">Fr</span>
+            <span class="day-meta">
+                <span class="day-title">Friday <span class="badge-today" hidden>Today</span></span>
+                <span class="day-focus">Accessory &bull; Prehab, Arms & Core</span>
+            </span>
+            <span class="day-progress" data-progress></span>
+            <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="day-body">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Exercise</th>
+                            <th>Sets × Reps</th>
+                            <th>Rest</th>
+                            <th>Form Focus</th>
+                            <th>Done</th>
+                            <th>Guide</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="exercise-name">Face Pulls</td>
+                            <td class="sets-reps">3 × 15-20</td>
+                            <td>60s</td>
+                            <td class="form-focus">Squeeze shoulder blades. Crucial for rotator cuff.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="fri-1" aria-label="Face Pulls done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=face+pull+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Cable Ext. Rotation</td>
+                            <td class="sets-reps">3 × 15-20</td>
+                            <td>60s</td>
+                            <td class="form-focus">Elbow pinned to side. Light weight, high control.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="fri-2" aria-label="Cable Ext. Rotation done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=cable+external+rotation+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Overhead Tricep Ext.</td>
+                            <td class="sets-reps">3 × 10-15</td>
+                            <td>60s</td>
+                            <td class="form-focus">Use a cable rope. Keep core braced so ribs don't flare.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="fri-3" aria-label="Overhead Tricep Ext. done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=cable+overhead+tricep+extension+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                        <tr>
+                            <td class="exercise-name">Reverse Curls</td>
+                            <td class="sets-reps">3 × 12-15</td>
+                            <td>45s</td>
+                            <td class="form-focus">Control the negative. Targets forearms and grip strength.</td>
+                            <td class="cell-check"><input type="checkbox" class="set-check" data-key="fri-4" aria-label="Reverse Curls done"></td>
+                            <td class="cell-guide"><a href="https://www.youtube.com/results?search_query=reverse+curl+proper+form" target="_blank" rel="noopener" class="btn">View</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Exercise</th>
-                        <th>Sets x Reps</th>
-                        <th>Rest</th>
-                        <th>Form Focus</th>
-                        <th>Guide</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="exercise-name">Face Pulls</td>
-                        <td class="sets-reps">3 x 15-20</td>
-                        <td>60s</td>
-                        <td class="form-focus">Squeeze shoulder blades. Crucial for rotator cuff.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=face+pull+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Cable Ext. Rotation</td>
-                        <td class="sets-reps">3 x 15-20</td>
-                        <td>60s</td>
-                        <td class="form-focus">Keep elbow pinned to side. Light weight, high control.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=cable+external+rotation+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Overhead Tricep Ext.</td>
-                        <td class="sets-reps">3 x 10-15</td>
-                        <td>60s</td>
-                        <td class="form-focus">Use a cable rope. Keep core braced so ribs don't flare.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=cable+overhead+tricep+extension+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                    <tr>
-                        <td class="exercise-name">Reverse Curls</td>
-                        <td class="sets-reps">3 x 12-15</td>
-                        <td>45s</td>
-                        <td class="form-focus">Control the negative. Targets forearms and grip strength.</td>
-                        <td><a href="https://www.youtube.com/results?search_query=reverse+curl+proper+form" target="_blank" class="btn">View</a></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    </details>
 
     <!-- Footer -->
-    <div class="footer">
+    <footer class="footer">
         <a href="/readme.html">📖 Deployment System Documentation</a>
-        <div class="credits">
-            <small>Powered by Ansible automation • Updated July 2026</small>
-        </div>
-    </div>
+        <p class="credits">
+            <small>Powered by Ansible automation • <button type="button" class="link-btn" id="reset-week">Reset checked exercises</button></small>
+        </p>
+    </footer>
 </div>
+
+<script>
+(function () {
+    'use strict';
+
+    var STORE_KEY = 'gym-guide-checks-v1';
+
+    function loadState() {
+        try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+        catch (e) { return {}; }
+    }
+    function saveState(state) {
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+        catch (e) { /* private mode etc - degrade silently */ }
+    }
+
+    var state = loadState();
+    var checks = Array.prototype.slice.call(document.querySelectorAll('.set-check'));
+
+    // Add data-labels for the mobile card layout.
+    var LABELS = { 1: 'Sets', 2: 'Rest', 3: 'Focus' };
+    document.querySelectorAll('tbody tr').forEach(function (row) {
+        var cells = row.querySelectorAll('td');
+        [1, 2, 3].forEach(function (i) {
+            if (cells[i]) cells[i].setAttribute('data-label', LABELS[i]);
+        });
+    });
+
+    function updateProgress(card) {
+        var boxes = card.querySelectorAll('.set-check');
+        var done = 0;
+        boxes.forEach(function (b) { if (b.checked) done++; });
+        var el = card.querySelector('[data-progress]');
+        el.textContent = done ? done + '/' + boxes.length : '';
+        el.classList.toggle('complete', done === boxes.length && boxes.length > 0);
+    }
+
+    checks.forEach(function (box) {
+        if (state[box.dataset.key]) box.checked = true;
+        box.addEventListener('change', function () {
+            if (box.checked) state[box.dataset.key] = 1;
+            else delete state[box.dataset.key];
+            saveState(state);
+            updateProgress(box.closest('.day-card'));
+        });
+    });
+
+    document.querySelectorAll('.day-card').forEach(updateProgress);
+
+    // Highlight + auto-open today's workout (Mon=1 .. Fri=5).
+    var today = new Date().getDay(); // 0=Sun .. 6=Sat
+    if (today >= 1 && today <= 5) {
+        var card = document.querySelector('.day-card[data-day="' + today + '"]');
+        if (card) {
+            card.open = true;
+            card.querySelector('.badge-today').hidden = false;
+        }
+        var navLink = document.querySelector('.day-nav a[data-day="' + today + '"]');
+        if (navLink) navLink.classList.add('today');
+    }
+
+    // Smooth-scroll nav links, compensating for the sticky bar.
+    document.querySelectorAll('.day-nav a').forEach(function (a) {
+        a.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            var target = document.querySelector(a.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    // Reset button (with confirm).
+    var resetBtn = document.getElementById('reset-week');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+            if (!window.confirm('Clear all checked exercises?')) return;
+            state = {};
+            saveState(state);
+            checks.forEach(function (b) { b.checked = false; });
+            document.querySelectorAll('.day-card').forEach(updateProgress);
+        });
+    }
+})();
+</script>
+
+<style>
+/* Small inline button that matches footer link styling. */
+.link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--accent);
+    font: inherit;
+    font-size: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.link-btn:hover { color: var(--accent-strong); }
+</style>
 
 </body>
 </html>
