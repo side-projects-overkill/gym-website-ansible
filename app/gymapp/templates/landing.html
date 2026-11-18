@@ -1,35 +1,68 @@
 {% extends "base.html" %}
-{% block title %}Gym Tracker - Train smart, track simply{% endblock %}
+{% block title %}Gym Tracker - Train with intention{% endblock %}
 {% block content %}
-<section class="landing-hero">
-    <p class="landing-eyebrow">Joint-first training, tracked simply</p>
-    <h1 class="landing-title">Show up. Log it.<br>Watch it add up.</h1>
-    <p class="landing-sub">
-        Your workout plan with a built-in rest timer, one-tap gym and walk
-        check-ins, body metrics, and a filling-food guide - in one calm place.
+<section class="lp-hero">
+    <p class="lp-eyebrow">Your training, beautifully simple</p>
+    <h1 class="lp-title">Show up.<br><span>Watch it add up.</span></h1>
+    <p class="lp-sub">
+        Today's workout, a rest timer that starts on its own, and your progress
+        in one calm place - so all that's left is the training.
     </p>
-    <div class="btn-group landing-actions">
-        <a class="btn btn-lg" href="/register">Create free account</a>
-        <a class="btn btn-lg btn-secondary" href="/login">Log in</a>
+    <div class="lp-actions">
+        <a class="btn btn-lg" href="/register">Get started - it's free</a>
+        <a class="lp-link" href="/login">I already have an account →</a>
     </div>
-    <p class="landing-note">Sign-up is verified through Telegram - no email needed.</p>
 </section>
 
-<section class="landing-features">
-    <div class="landing-feature">
-        <span class="landing-icon" aria-hidden="true">🏋️</span>
-        <h3>Today's workout, ready</h3>
-        <p>Your day opens on the right session. Log a set and the rest timer starts on its own.</p>
-    </div>
-    <div class="landing-feature">
-        <span class="landing-icon" aria-hidden="true">⌚</span>
-        <h3>Sync from your watch</h3>
-        <p>Import workouts, walks and weight from Apple Health or Google - no extra app.</p>
-    </div>
-    <div class="landing-feature">
-        <span class="landing-icon" aria-hidden="true">📈</span>
-        <h3>Progress you can see</h3>
-        <p>Streaks, weekly goals and weight trends, plus suggestions for when to add load.</p>
+{# A static, illustrative preview of the Today screen - pure HTML/CSS. #}
+<section class="landing-preview" aria-label="Preview of the Today screen">
+    <div class="lp-device">
+        <div class="lp-device-head">
+            <div>
+                <span class="lp-kicker">Wednesday</span>
+                <strong class="lp-device-title">Pull · Back &amp; Biceps</strong>
+            </div>
+            <div class="lp-ring" style="--pct: 80"><span>4/5</span></div>
+        </div>
+        <ul class="lp-list">
+            <li class="is-done"><span class="lp-check">✓</span><span class="lp-ex">Lat Pulldown</span><span class="lp-meta">3 × 12 · 45 kg</span></li>
+            <li class="is-done"><span class="lp-check">✓</span><span class="lp-ex">Seated Cable Row</span><span class="lp-meta">3 × 10 · 50 kg</span></li>
+            <li class="is-now"><span class="lp-check"></span><span class="lp-ex">Incline DB Curl</span><span class="lp-timer">Rest 1:24</span></li>
+            <li><span class="lp-check"></span><span class="lp-ex">Hammer Curls</span><span class="lp-meta">3 × 12</span></li>
+        </ul>
+        <div class="lp-device-foot">
+            <span><strong>4</strong> gym days this week</span>
+            <span><strong>12.6</strong> km walked</span>
+            <span class="lp-up">▲ 18% more volume</span>
+        </div>
     </div>
 </section>
+
+<section class="lp-features">
+    <div class="lp-feature">
+        <span class="lp-num">01</span>
+        <h3>Open the app, start training</h3>
+        <p>Today's session is waiting with your last weights filled in. Log a set and the rest timer takes care of itself.</p>
+    </div>
+    <div class="lp-feature">
+        <span class="lp-num">02</span>
+        <h3>Your watch, already counted</h3>
+        <p>Bring in walks, workouts and weigh-ins from Apple Health or Google in a few taps - no extra app to install.</p>
+    </div>
+    <div class="lp-feature">
+        <span class="lp-num">03</span>
+        <h3>Progress you can feel</h3>
+        <p>Streaks, weekly goals and gentle nudges for when it's time to add weight. Nothing noisy, nothing you don't need.</p>
+    </div>
+</section>
+
+<section class="lp-closing">
+    <h2>Your next session starts here.</h2>
+    <a class="btn btn-lg" href="/register">Create your free account</a>
+</section>
+
+<footer class="lp-footer">
+    <span class="lp-footer-brand">Gym Tracker</span>
+    <span>Train with intention.</span>
+</footer>
 {% endblock %}

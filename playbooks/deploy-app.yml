@@ -108,6 +108,22 @@
         mode: '0644'
       notify: restart httpd
 
+    # The site used to be static HTML. Remove those leftovers (deployment
+    # docs, old pages, backups) so nothing internal is ever reachable.
+    - name: Find legacy static files in the web root
+      find:
+        paths: "{{ web_root }}"
+        patterns: ["readme.html", "index.html", "index.html.backup-*", "*.html"]
+      register: legacy_web_files
+
+    - name: Remove legacy static files from the web root
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ legacy_web_files.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+
     - name: Ensure Apache is enabled and running
       systemd:
         name: httpd
