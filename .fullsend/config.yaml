@@ -18,6 +18,19 @@ roles:
     - fix
     - retro
     - prioritize
+agents:
+    - name: triage
+      model: gateway/rits/zai-org/glm-5-3
+    - name: coder
+      model: gateway/rits/deepseek-ai/DeepSeek-V4.1-Flash-1017
+    - name: review
+      model: gateway/rits/zai-org/glm-5-3
+    - name: fix
+      model: gateway/rits/deepseek-ai/DeepSeek-V4.1-Flash-1017
+    - name: retro
+      model: gateway/rits/zai-org/glm-5-3
+    - name: prioritize
+      model: gateway/rits/zai-org/glm-5-3
 allowed_remote_resources:
     - https://raw.githubusercontent.com/fullsend-ai/fullsend/
     - https://raw.githubusercontent.com/fullsend-ai/agents/
@@ -27,4 +40,6 @@ inference:
         auth: api-key
         models:
             rits/zai-org/glm-5-3:
+                api: openai-completions
+            rits/deepseek-ai/DeepSeek-V4.1-Flash-1017:
                 api: openai-completions
