@@ -30,6 +30,12 @@ write implementation code without a failing test that justifies it.
 `deploy.yml` gates the self-hosted deploy on tests passing. Never bypass or mark
 the tests job as non-blocking.
 
+Merges to `main` also wait for the fullsend review check (`dispatch / Review`
+from `.github/workflows/fullsend.yaml`) to complete - the review gate is the
+same class of protection as the tests gate, and every merge deploys straight
+to the live gym-server. Do not merge while the review run is queued or
+in progress.
+
 ## 2. Security check before done
 
 This repo deploys directly to a live server (gym-server, 192.168.1.11) via a
