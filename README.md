@@ -16,6 +16,60 @@ The primary deployment target is now the **Gym Tracker app** (`app/`): a small F
 
 **Live Example**: [http://192.168.1.11](http://192.168.1.11) - Gym Tracker app (public workout page + `/admin` panel)
 
+## Architecture
+
+Three moving parts: the Flask app (`app/`), the Ansible playbooks that deploy
+and manage it (`playbooks/`), and the GitHub Actions pipeline that connects
+them (`.github/workflows/`). `website/` is the legacy static HTML site the
+app replaced.
+
+### How a change reaches the server
+
+```
+push to main
+  |
+  v
+tests job (GitHub-hosted runner)
+  Python test suite + Ansible syntax check (.github/workflows/tests.yml,
+  mirrored in deploy.yml) - nothing broken reaches the server
+  |
+  v
+deploy job (self-hosted runner)
+  The runner IS gym-server (192.168.1.11), so it runs the same playbook
+  locally: sudo ansible-playbook -c local playbooks/deploy-app.yml
+  |
+  v
+gym-server
+  dnf packages, gymapp user, code sync, systemd unit, Apache proxy config
+```
+
+Ansible remains the deploy engine: CI only invokes `playbooks/deploy-app.yml`
+with `-c local` - exactly what you would run by hand over SSH.
+
+### Runtime topology on gym-server
+
+```
+browser --> Apache (httpd, port 80)
+              |  ProxyPass / (mod_proxy)
+              v
+            gunicorn (127.0.0.1:8099, systemd unit "gymapp")
+              |
+              v
+            Flask app (/opt/gymapp/app, wsgi:application)
+              |
+              v
+            SQLite + per-user YAML in /opt/gymapp/data
+```
+
+- The app runs as its own unprivileged `gymapp` system user - not `apache`,
+  not `root` (`ProtectSystem=full` in the unit; it can only write to the
+  data dir).
+- Everything the app persists lives under `/opt/gymapp/data`: the SQLite db,
+  per-user workout/food YAML, logins, and the session key. Deploys never
+  touch it - copy that one directory to move the app to another host.
+- Apache proxies every URL to the app; nothing is served from disk, so no
+  internal files can leak publicly.
+
 ## Project Structure
 
 ```
@@ -320,6 +374,58 @@ all:
     app_port: 8099
     admin_username: "admin"
 ```
+
+## Local Development
+
+You can run the whole app on your machine - no server, no network access,
+and no real credentials needed.
+
+### Prerequisites
+
+- Python 3.12+ (on the server the same stack comes from Fedora dnf packages;
+  locally you use PyPI)
+
+### Run the app locally
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r app/requirements.txt -r app/requirements-dev.txt
+python app/wsgi.py          # Flask dev server on http://127.0.0.1:5000
+```
+
+Data (SQLite db, workout YAML, logins) is created on first run under
+`app/data/`. Point it somewhere else with `GYMAPP_DATA_DIR`:
+
+```bash
+GYMAPP_DATA_DIR=/tmp/gymapp-dev python app/wsgi.py
+```
+
+To sign in locally, create an account directly (bypasses the Telegram
+registration flow):
+
+```bash
+python app/manage.py create-user --username admin --password 'devpass123'
+```
+
+### Configuration (environment variables)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `GYMAPP_DATA_DIR` | `app/data` | Data directory (db, YAML, logins, session key) |
+| `GYMAPP_ENABLE_TELEGRAM_POLLER` | off | Set to `1` to enable the Telegram poller. Off by default so local dev makes no network calls; the systemd unit enables it on the server. |
+| `GYMAPP_TELEGRAM_HELPER_API_BASE` | *(empty)* | REST API of the separate Telegram helper service (it owns the bot token; this app never talks to Telegram directly) |
+| `GYMAPP_PUBLIC_BASE_URL` | `http://127.0.0.1:5000` | Base URL used for links the app generates |
+| `GYMAPP_TIMEZONE` | `Asia/Kolkata` | Timezone for all "today" computations (workout of the day, charts, check-ins) |
+
+### Run the tests
+
+```bash
+./scripts/run-python-tests.sh   # or: make test
+```
+
+The suite needs no server and no real credentials - tests run against
+temporary data dirs (see `app/tests/conftest.py`).
 
 ## Testing
 
