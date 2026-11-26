@@ -35,26 +35,41 @@ def _probe_make_recipes():
 
     Runs a minimal makefile whose recipe spawns a shell (`make --version`
     alone would not catch it). Returns (works, detail). Only environment
-    failures (make missing/unexecutable, exec of the recipe shell blocked,
-    or an unusable temp dir) return works=False; a genuine makefile error
-    returns works=True so the guard tests fail loudly instead of skipping.
+    failures (make unexecutable, exec of the recipe shell blocked, or an
+    unusable temp dir) return works=False; a missing make binary or a
+    genuine makefile error returns works=True so the guard tests fail
+    loudly instead of skipping.
     """
     try:
         with tempfile.TemporaryDirectory() as tmp:
             probe_mk = os.path.join(tmp, "probe.mk")
             with open(probe_mk, "w") as fh:
                 fh.write("probe:\n\t@true\n")
+            # Pin an English (C) locale: make renders the recipe shell's
+            # exec failure via strerror(), which is localized under a
+            # non-English locale and would defeat the string match below.
             r = subprocess.run(
                 ["make", "-f", probe_mk, "probe"],
                 capture_output=True, text=True,
+                env={
+                    **os.environ,
+                    "LC_ALL": "C",
+                    "LC_MESSAGES": "C",
+                    "LANGUAGE": "",
+                },
             )
+    except FileNotFoundError as exc:
+        # make simply not installed: fail loudly (the guard tests raise
+        # the same error when they invoke make) rather than skipping and
+        # silently losing Makefile guard coverage.
+        return True, f"make not found: {exc}"
     except OSError as exc:  # PermissionError is an OSError subclass
         return False, f"{type(exc).__name__}: {exc}"
     if r.returncode == 0:
         return True, ""
     output = (r.stderr or "") + (r.stdout or "")
     if "Operation not permitted" in output or "Permission denied" in output:
-        return False, output.strip()
+        return False, f"exit {r.returncode}: {output.strip()}"
     return True, output.strip()  # genuine make/makefile error — do not skip
 
 

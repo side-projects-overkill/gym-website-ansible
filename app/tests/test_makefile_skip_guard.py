@@ -90,7 +90,7 @@ def test_recipe_tests_skip_when_make_cannot_exec_shell(monkeypatch):
 
 
 def test_recipe_tests_skip_when_make_cannot_be_executed(monkeypatch):
-    """A missing/unexecutable make binary is also an environment failure."""
+    """An unexecutable make binary is also an environment failure."""
     _assume_not_on_ci(monkeypatch)
     _patch_run(
         monkeypatch, error=PermissionError(13, "Permission denied", "make")
@@ -100,6 +100,84 @@ def test_recipe_tests_skip_when_make_cannot_be_executed(monkeypatch):
         mark = _skipif_mark(getattr(mod, name))
         assert mark is not None, f"{name} lacks the environment skipif guard"
         assert mark.args[0] is True, f"{name} should skip when make cannot run"
+
+
+def test_missing_make_binary_fails_loud_instead_of_skipping(monkeypatch):
+    """A missing make binary must fail the tests, not silently skip them.
+
+    If make is simply not installed, skipping would hide a broken local
+    toolchain behind a green-looking run; the tests must stay active and
+    fail with the underlying FileNotFoundError when they invoke make.
+    """
+    _assume_not_on_ci(monkeypatch)
+    _patch_run(
+        monkeypatch,
+        error=FileNotFoundError(2, "No such file or directory", "make"),
+    )
+    mod = _load_test_makefile()
+    for name in RECIPE_TESTS:
+        mark = _skipif_mark(getattr(mod, name))
+        assert mark is None or mark.args[0] is False, (
+            f"{name} must stay active so a missing make binary fails loudly"
+        )
+
+
+def test_probe_runs_make_with_a_deterministic_locale(monkeypatch):
+    """The probe must force an English (C) locale for the make subprocess.
+
+    make renders the recipe shell's exec failure via strerror(), which is
+    localized under a non-English locale; without a pinned locale the
+    'Operation not permitted' / 'Permission denied' match would silently
+    stop recognizing the sandbox failure mode (issue #9 symptom returns).
+    """
+    _assume_not_on_ci(monkeypatch)
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        captured.update(kwargs)
+        return subprocess.CompletedProcess(args=cmd, returncode=0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    _load_test_makefile()
+    env = captured.get("env") or {}
+    assert env.get("LC_ALL") == "C", "probe must pin LC_ALL=C"
+    assert env.get("LC_MESSAGES") == "C", "probe must pin LC_MESSAGES=C"
+    assert env.get("LANGUAGE") == "", "probe must clear LANGUAGE"
+
+
+def test_skip_reason_carries_probe_exit_code_and_full_output(monkeypatch):
+    """The skip reason must include the probe exit code and full output.
+
+    Without the exit code and the complete make output, a skip caused by
+    something other than the known sandbox limitation is indistinguishable
+    from the expected one.
+    """
+    _assume_not_on_ci(monkeypatch)
+    _patch_run(
+        monkeypatch,
+        result=subprocess.CompletedProcess(
+            args=["make"],
+            # Exit code deliberately absent from the output text so the
+            # assertion can only pass if the reason carries the exit code.
+            returncode=127,
+            stdout="",
+            stderr=(
+                "make: /bin/sh: Operation not permitted\n"
+                "make: *** [probe.mk:probe] Error\n"
+            ),
+        ),
+    )
+    mod = _load_test_makefile()
+    for name in RECIPE_TESTS:
+        mark = _skipif_mark(getattr(mod, name))
+        assert mark is not None, f"{name} lacks the environment skipif guard"
+        assert mark.args[0] is True, f"{name} should skip when make cannot exec"
+        reason = mark.kwargs.get("reason", "")
+        assert "127" in reason, "skip reason must include the probe exit code"
+        assert "Operation not permitted" in reason
+        assert "[probe.mk:probe] Error" in reason, (
+            "skip reason must carry the full output"
+        )
 
 
 def test_nothing_skips_when_recipes_execute(monkeypatch):
