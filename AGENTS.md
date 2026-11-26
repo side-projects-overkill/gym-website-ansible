@@ -31,10 +31,12 @@ write implementation code without a failing test that justifies it.
 the tests job as non-blocking.
 
 Merges to `main` also wait for the fullsend review check (`dispatch / Review`
-from `.github/workflows/fullsend.yaml`) to complete - the review gate is the
-same class of protection as the tests gate, and every merge deploys straight
-to the live gym-server. Do not merge while the review run is queued or
-in progress.
+from `.github/workflows/fullsend.yaml`) to complete successfully - the review
+gate is the same class of protection as the tests gate, and every merge
+deploys straight to the live gym-server. Do not merge while the review run is
+queued, in progress, or has failed. Until the required status check
+`dispatch / Review` is configured in branch protection for `main`, this rule
+is advisory only - verify the review run has a verdict before merging.
 
 ## 2. Security check before done
 
