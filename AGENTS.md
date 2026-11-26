@@ -21,6 +21,9 @@ write implementation code without a failing test that justifies it.
 - Never delete or weaken a test to make code pass; if a test is wrong, explain why and fix it.
 - Tests must not require the server, network, or real credentials - use fixtures/mocks
   (see `app/tests/conftest.py`).
+- Known sandbox limitation: agent sandboxes block make's exec of /bin/sh, so the
+  Makefile guard tests that execute recipes skip with a stated reason - treat that
+  clean skip as expected; CI on GitHub-hosted runners runs them fully.
 - Ansible playbooks are verified with `make ansible-check` (syntax) and, where
   possible, idempotent re-run behavior rather than unit tests.
 
